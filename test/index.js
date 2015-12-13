@@ -5,16 +5,17 @@ var should = require('chai').should(),
     cwip = require('../index'),
     cwiplog = cwip.log,
     existy = cwip.existy,
-    truthy = cwip.truthy;
+    truthy = cwip.truthy,
+    fixCircular = cwip.fixCircular;
+
+var log = console.log;
+
+function l () { // reset console.log to show test results
+  console.log = log;
+}
 
 describe('#log', function() {
   
-  var log = console.log;
-
-  function l () { // reset console.log to show test results
-    console.log = log;
-  }
-
   beforeEach(function() {
     this.sinon.stub(console, 'log');
   });
@@ -87,7 +88,30 @@ describe('#existy', function() {
 });
 
 
+describe('#fixCircular', function() {
 
+  beforeEach(function() {
+    this.sinon.stub(console, 'log');
+  });
+
+  it('stringifies objects with circular properties', function() {
+    var o = {a: 'a', b: {c: 'c', d: 'd'}};
+    o.b.c = o.b;
+    console.log(fixCircular(o));
+    expect( console.log.args[0][0] ).to.contain(
+      '{\n    "a": "a",\n    "b": {\n        "d": "d"\n    }\n}'
+    );
+  });
+
+  it('stringifies objects without circular properties', function() {
+    var o = {a: 'a', b: {c: 'c', d: 'd'}};
+    console.log(fixCircular(o));
+    expect( console.log.args[0][0] ).to.contain(
+      '{\n    "a": "a",\n    "b": {\n        "c": "c",\n        "d": "d"\n    }\n}'
+    );
+  });
+
+});
 
 
 

@@ -6,6 +6,7 @@ module.exports = {
     log: log,
     existy: existy,
     truthy: truthy,
+    fixCircular: fixCircular
 };
 
 // log the filename, line number, function name, and auto stringify objects
@@ -24,7 +25,7 @@ function log() {
 
 // Quick existance check
 function existy(x) { 
-    return x !== null && typeof(x) != 'undefined';
+    return typeof(x) != 'undefined' && x !== null;
 }
 
 // Quick truthyness check
