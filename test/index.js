@@ -6,7 +6,8 @@ var should = require('chai').should(),
     cwiplog = cwip.log(),
     existy = cwip.existy,
     truthy = cwip.truthy,
-    fixCircular = cwip.fixCircular;
+    fixCircular = cwip.fixCircular,
+    now = cwip.now;
 
 var log = console.log;
 
@@ -112,6 +113,24 @@ describe('#fixCircular', function() {
   });
 
 });
+
+describe('#now', function() {
+
+  it('prints in YYYY-MM-DD hh:mm:ss a format if no format is specified', function() {
+    expect( now() ).to.contain('TIME:\t');
+  });
+
+  it('prints in the passed format', function() {
+    expect( now('MM-DD-YYYY') ).to.contain('TIME:\t');
+  });
+
+  it('prints in YYYY-MM-DD hh:mm:ss a format if the passed format is invalid', function() {
+    expect( now('YYYYYYYYYYabc') ).to.contain('TIME:\t');
+  });
+
+});
+
+
 
 
 

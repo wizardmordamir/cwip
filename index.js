@@ -6,6 +6,7 @@ module.exports = {
     existy: existy,
     truthy: truthy,
     fixCircular: fixCircular,
+    now: now
 };
 
 // log the filename, line number, function name, and auto stringify objects
@@ -62,8 +63,20 @@ function truthy(x) {
     return x !== false && existy(x);
 }
 
-function now () {
-    return 'TIME:\t' + moment().format('YYYY-MM-DD hh:mm:ss a');
+function now (format) {
+    
+    var time;
+    var dFormat = 'YYYY-MM-DD hh:mm:ss a';
+    format = format || dFormat;
+    
+    try {
+        time = 'TIME:\t' + moment().format(format);
+    }catch (err) {
+        time = 'TIME:\t' + moment().format(dFormat);
+    }finally{
+        return time;
+    }
+    
 }
 
 // Allow JSON.stringify to work on objects with circular references
