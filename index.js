@@ -20,7 +20,6 @@ function log() {
         Error.captureStackTrace(err, arguments.callee);
         var stack = err.stack;
         Error.prepareStackTrace = orig;
-        console.log('*** stack: ' + JSON.stringify(stack));
 
         var s = '\n';
         var args = _.toArray(arguments);
@@ -29,8 +28,7 @@ function log() {
         _.each(args, function (arg) { 
             var add; 
             var fixedArg = typeof arg === 'object' ? JSON.parse(fixCircular(arg)) : arg;
-            fixedArg = typeof arg === 'function' ? fixedArg() : arg;
-            add = typeof fixedArg === 'string' ? fixedArg : fixedArg;
+            add = typeof fixedArg === 'string' ? fixedArg : fixCircular(fixedArg);
             s += add + '\n';
         });
         
