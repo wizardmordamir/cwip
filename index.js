@@ -1,4 +1,3 @@
-var fs = require('fs');
 var _ = require('underscore');
 var moment = require('moment');
 
@@ -6,21 +5,53 @@ module.exports = {
     log: log,
     existy: existy,
     truthy: truthy,
-    fixCircular: fixCircular
+    fixCircular: fixCircular,
 };
 
 // log the filename, line number, function name, and auto stringify objects
 function log() {
-    var s = '\n';
-    var args = _.toArray(arguments);
-    args.unshift( now(), file(), line(), fn() );
-    _.each(args, function (arg) { 
-        var add; 
-        var fixedArg = typeof arg === 'object' ? JSON.parse(fixCircular(arg)) : arg;
-        add = typeof fixedArg === 'string' ? fixedArg : add = fixCircular(fixedArg);
-        s += add + '\n';
-    });
-    console.log(s);
+    return function () {
+        // Get the current stack using V8 api (https://github.com/v8/v8/wiki/Stack%20Trace%20API)
+        var orig = Error.prepareStackTrace;
+        Error.prepareStackTrace = function(_, stack) {
+            return stack;
+        };
+        var err = new Error;
+        Error.captureStackTrace(err, arguments.callee);
+        var stack = err.stack;
+        Error.prepareStackTrace = orig;
+        console.log('*** stack: ' + JSON.stringify(stack));
+
+        var s = '\n';
+        var args = _.toArray(arguments);
+        args.unshift( now(), file(), line(), fn() );
+        
+        _.each(args, function (arg) { 
+            var add; 
+            var fixedArg = typeof arg === 'object' ? JSON.parse(fixCircular(arg)) : arg;
+            fixedArg = typeof arg === 'function' ? fixedArg() : arg;
+            add = typeof fixedArg === 'string' ? fixedArg : fixedArg;
+            s += add + '\n';
+        });
+        
+        console.log(s);
+
+        // Get the name of the current file
+        function file () {
+            return 'FILE:\t' + stack[0].getFileName();
+        }
+
+        // Get the current line number
+        function line () {
+            return 'LINE:\t'+stack[0].getLineNumber();
+        }
+
+        // get the current function name
+        function fn () {
+            return 'FUNC:\t' + stack[0].getFunctionName() + ' ()';
+        }
+
+    };
 }
 
 // Quick existance check
@@ -51,33 +82,7 @@ function fixCircular(o) {
     }, 4); // args -> object to stringify, props to show, number of spaces for readability
 }
 
-// Get the current stack using V8 api (https://github.com/v8/v8/wiki/Stack%20Trace%20API)
-function stack () {
-    var orig = Error.prepareStackTrace;
-    Error.prepareStackTrace = function(_, stack) {
-        return stack;
-    };
-    var err = new Error;
-    Error.captureStackTrace(err, arguments.callee);
-    var stack = err.stack;
-    Error.prepareStackTrace = orig;
-    return stack;
-}
 
-// Get the name of the current file
-function file () {
-    return 'FILE:\t' + stack()[1].getFileName();
-}
-
-// Get the current line number
-function line () {
-    return 'LINE:\t'+stack()[1].getLineNumber();
-}
-
-// get the current function name
-function fn () {
-    return 'FUNC:\t' + stack()[1].getFunctionName() + ' ()';
-}
 
 
 
