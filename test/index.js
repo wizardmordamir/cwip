@@ -33,9 +33,21 @@ describe('#log', function() {
     l();
   });
 
+  it('does not log the time when it is called with hidetime configuration', function() {
+    cwiplog({cwip: { hidetime: true } });
+    expect( console.log.args[0][0] ).to.not.contain('TIME:\t' + moment().format('YYYY-MM-DD'));
+    l();
+  });
+
   it('logs the file it is called from', function() {
     cwiplog();
     expect( console.log.args[0][0] ).to.contain('FILE:\t');
+    l();
+  });
+
+  it('does not log the file when it is called with hidefile configuration', function() {
+    cwiplog({cwip: { hidefile: true } });
+    expect( console.log.args[0][0] ).to.not.contain('FILE:\t');
     l();
   });
 
@@ -45,9 +57,21 @@ describe('#log', function() {
     l();
   });
 
+  it('does not log the line when it is called with hideline configuration', function() {
+    cwiplog({cwip: { hideline: true } });
+    expect( console.log.args[0][0] ).to.not.contain('LINE:\t');
+    l();
+  });
+
   it('logs the function it is called from', function() {
     cwiplog();
     expect( console.log.args[0][0] ).to.contain('FUNC:\t');
+    l();
+  });
+
+  it('does not log the function when it is called with hidefunction configuration', function() {
+    cwiplog({cwip: { hidefunction: true } });
+    expect( console.log.args[0][0] ).to.not.contain('FUNC:\t');
     l();
   });
 
