@@ -1,6 +1,6 @@
 {
   "name": "cwip",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Helpful utility functions for node js",
   "main": "index.js",
   "scripts": {
