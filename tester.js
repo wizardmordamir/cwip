@@ -1,4 +1,4 @@
-var c = require('./index.js');
+var c = require('./index.js')
 
-l = c.log();
-l({cwip: {hidetime: true}});
+var l = c.log()
+l({cwip: {hidetime: true}})

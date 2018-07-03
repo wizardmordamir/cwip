@@ -24,7 +24,8 @@
     "chai": "^3.4.1",
     "mocha": "^2.3.4",
     "mocha-sinon": "^1.1.4",
-    "sinon": "^1.17.2"
+    "sinon": "^1.17.2",
+    "standard": "*"
   },
   "dependencies": {
     "moment": "^2.10.6",
