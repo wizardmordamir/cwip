@@ -1,11 +1,11 @@
 Cwip
 =========
 
-A small library providing javascript utility methods
+A library providing javascript utility methods
 
 ## Installation
 
-  npm install cwip --save
+  npm install --save cwip
 
 ## Usage
 
