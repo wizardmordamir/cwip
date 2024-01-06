@@ -2,9 +2,10 @@
   "name": "cwip",
   "version": "0.3.1",
   "description": "Helpful utility functions for node js",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "make test"
+    "lint": "eslint . --ext .js,.ts --ignore-path .eslintignore",
+    "test": "bun test"
   },
   "repository": {
     "type": "git",
@@ -14,24 +15,17 @@
     "utilities",
     "functions"
   ],
-  "author": "Curt Phillips <curtwphillips@gmail.com> (http://curtwphillips.com)",
+  "author": "Curtis Phillips <curtwphillips@gmail.com> (http://curtwphillips.com)",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/curtwphillips/cwip/issues"
   },
   "homepage": "https://github.com/curtwphillips/cwip#readme",
   "devDependencies": {
-    "chai": "^4.1.2",
-    "mocha": "^5.2.0",
-    "mocha-sinon": "^2.1.0",
-    "sinon": "^6.1.5",
-    "standard": "*"
-  },
-  "dependencies": {
-    "lodash": "^4.17.10",
-    "mathjs": "^5.1.0",
-    "moment": "^2.22.2",
-    "npm": "^6.3.0",
-    "underscore": "^1.8.3"
+    "@types/jest": "^29.5.11",
+    "@typescript-eslint/parser": "^6.17.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1"
   }
 }
