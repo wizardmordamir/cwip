@@ -1,5 +1,7 @@
 import { shallowClone } from './objects';
 
+export const missingVals = <T>(arr: T[], vals: T[]) => vals.filter((val) => !arr.includes(val));
+
 export const valsExistInArray = (arr: [], vals: [], key: string) => vals.map((val) => (key ? !!arr.find((a) => a[key] === val) : arr.indexOf(val) !== -1));
 
 export const removeArrayValues = <T>(arr: T[], vals: T[], key: string): T[] =>
