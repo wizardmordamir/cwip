@@ -7,4 +7,5 @@ const inner =
   (...args) =>
     args.length >= fn.length ? fn(...args) : (...more) => curry(fn)(...args, ...more);
 
+// note fn.length changes when there are rest or default params
 export const curry = <P extends any[], R>(fn: (...args: P) => R) => inner(fn);
