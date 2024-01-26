@@ -1,15 +1,13 @@
-import { shallowClone } from './objects';
-
 // checks for vals at top level
-export const missingVals = <T>(arr: T[], vals: T[]): T[] =>
+export const excludes = <T>(arr: T[], vals: T[]): T[] =>
   vals.filter((val) => !arr.includes(val));
 
 // checks for vals at top level or at key
-export const valsExistInArray = <T>(arr: T[], vals: T[], key: string): boolean[] =>
+export const includes = <T>(arr: T[], vals: T[], key: string): boolean[] =>
   vals.map((val) => (key ? !!arr.find((a) => a[key] === val) : arr.indexOf(val) !== -1));
 
 // checks for vals at top level or at key
-export const removeArrayValues = <T>(arr: T[], vals: T[], key: string): T[] =>
+export const without = <T>(arr: T[], vals: T[], key: string): T[] =>
   arr.reduceRight(
     (accum, item, i) =>
       key

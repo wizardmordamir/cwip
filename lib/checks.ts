@@ -1,4 +1,4 @@
-import { missingVals } from './arrays';
+import { excludes } from './arrays';
 
 export const existy = <T>(val: T): boolean => typeof val !== 'undefined' && val !== null;
 
@@ -13,8 +13,8 @@ export const isPrimitive = <T>(val: T): boolean =>
 export const isObject = <T>(val: T): boolean =>
   typeof val === 'object' && val !== null && !Array.isArray(val);
 
-export const missingKeys = <T>(obj: T, keys: string[]): string[] =>
-  missingVals(Object.keys(obj), keys);
+export const excludesKeys = <T>(obj: T, keys: string[]): string[] =>
+  excludes(Object.keys(obj), keys);
 
 // return true if all keys in obj are not existy or empty arrays or empty objects
 export const isEmpty = <T>(obj: T): boolean =>
