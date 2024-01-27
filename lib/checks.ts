@@ -16,7 +16,7 @@ export const isObject = <T>(val: T): boolean =>
 export const excludesKeys = <T>(obj: T, keys: string[]): string[] =>
   excludes(Object.keys(obj), keys);
 
-// return true if all keys in obj are not existy or empty arrays or empty objects
+// return true if all keys in obj are either not existy, empty arrays, or empty objects
 export const isEmpty = <T>(obj: T): boolean =>
   isPrimitive(obj)
     ? !existy(obj)
@@ -29,3 +29,5 @@ export const isEmpty = <T>(obj: T): boolean =>
               ? isEmpty(obj[k])
               : !existy(obj[k]),
         );
+
+console.log('Number.isNumber(isNaN)', Number.isFinite('a'))
