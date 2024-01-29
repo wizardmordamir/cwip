@@ -2,21 +2,23 @@ import { curry } from './functional';
 
 // NOTE does not currently work with big ints or very long decimals
 
-export const round = curry((decimals, val) =>
-  Number(Math.round(val + 'e' + decimals) + 'e-' + decimals),
+export const setPrecision = curry(
+  (precision: number, val: number): number => +val.toFixed(precision),
 );
 
-export const roundUp = curry((decimals, val) =>
-  Number(Math.ceil(val + 'e' + decimals) + 'e-' + decimals),
+export const round = curry((decimals: number, val: number): number =>
+  Number(Math.round(Number(val + 'e' + decimals)) + 'e-' + decimals),
 );
 
-export const roundDown = curry((decimals, val) =>
-  Number(Math.floor(val + 'e' + decimals) + 'e-' + decimals),
+export const roundUp = curry((decimals: number, val: number): number =>
+  Number(Math.ceil(Number(val + 'e' + decimals)) + 'e-' + decimals),
 );
 
-const validDoMathTypes = ['add', 'subtract', 'divide'];
+export const roundDown = curry((decimals: number, val: number) =>
+  Number(Math.floor(Number(val + 'e' + decimals)) + 'e-' + decimals),
+);
 
-export const multiply = (v1, v2) => {
+export const multiply = (v1: number, v2: number): number => {
   const signMult = (v1 < 0 && v2 > 0) || (v2 < 0 && v1 > 0) ? -1 : 1;
   const v1Decimals = countDecimals(v1);
   const v2Decimals = countDecimals(v2);
@@ -93,7 +95,9 @@ export const multiply = (v1, v2) => {
   return signMult * Number(floatAnswer.join(''));
 };
 
-export const doMath = (type, v1, v2) => {
+type Operations = 'add' | 'subtract' | 'divide';
+
+export const doMath = (type: Operations, v1: number, v2: number) => {
   // check for scientific notation, convert to decimal
   if (v1.toString().includes('e-')) {
     v1 = convertScientificToDecimal(v1);
@@ -127,11 +131,11 @@ export const doMath = (type, v1, v2) => {
   return Number(tempAnswer + 'e-' + biggerDecimals);
 };
 
-export const add = (v1, v2) => doMath('add', v1, v2);
-export const subtract = (v1, v2) => doMath('subtract', v1, v2);
-export const divide = (v1, v2) => doMath('divide', v1, v2);
+export const add = (v1: number, v2: number): number => doMath('add', v1, v2);
+export const subtract = (v1: number, v2: number): number => doMath('subtract', v1, v2);
+export const divide = (v1: number, v2: number): number => doMath('divide', v1, v2);
 
-export const countDecimals = function (val) {
+export const countDecimals = (val: number): number => {
   if (val % 1 === 0) {
     return 0;
   }
@@ -142,13 +146,13 @@ export const countDecimals = function (val) {
   return strVal.split('.')[1].length;
 };
 
-export const convertScientificToDecimal = function (num) {
-  const strNum = num.toString().toLowerCase();
+export const convertScientificToDecimal = (num: number): string | number => {
+  const strNum: string = num.toString().toLowerCase();
 
   // check for each part of the notation
-  const decimalIndex = strNum.indexOf('.');
+  const decimalIndex: number = strNum.indexOf('.');
 
-  let eIndex = strNum.indexOf('e');
+  let eIndex: number = strNum.indexOf('e');
 
   if (eIndex === -1) {
     return num;
@@ -167,7 +171,8 @@ export const convertScientificToDecimal = function (num) {
     bigger = false;
   }
 
-  let left, right;
+  let left: string;
+  let right: string;
 
   // gather the numbers from each side of the decimal
   if (decimalIndex !== -1) {
@@ -179,9 +184,11 @@ export const convertScientificToDecimal = function (num) {
   }
 
   // get the exponent
-  const expon = strNum.slice(eIndex + exponChars, strNum.length);
+  const expon: number = Number(strNum.slice(eIndex + exponChars, strNum.length));
 
-  let zeroCount, newStrNum, i;
+  let zeroCount: number;
+  let newStrNum: string;
+  let i: number;
 
   // add zeros as needed
   if (!bigger) {

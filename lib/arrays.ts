@@ -1,6 +1,5 @@
 // checks for vals at top level
-export const excludes = <T>(arr: T[], vals: T[]): T[] =>
-  vals.filter((val) => !arr.includes(val));
+export const excludes = <T>(arr: T[], vals: T[]): T[] => vals.filter((val) => !arr.includes(val));
 
 // checks for vals at top level or at key
 export const includes = <T>(arr: T[], vals: T[], key: string): boolean[] =>
@@ -21,3 +20,6 @@ export const without = <T>(arr: T[], vals: T[], key: string): T[] =>
   );
 
 export const removePrimitiveDups = <T>(arr: T[]): T[] => [...new Set(arr)];
+
+export const zip = (...arr) =>
+  [...Array(Math.max(...arr.map((a) => a.length)))].map((_, i) => arr.map((a) => a[i]));

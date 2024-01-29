@@ -1,4 +1,4 @@
-import { truthy } from './checks';
+import { truthy } from './types';
 
 export const ifIt = (cond, action, defaultTo) => (truthy(cond) ? action() : defaultTo);
 

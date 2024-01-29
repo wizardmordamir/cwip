@@ -1,13 +1,17 @@
 import { stringify } from './objects';
 
+type Config = {
+  hideFile: boolean;
+  hideTime: boolean;
+};
+
 export const getFileFromStack = (stack) => stack[0].getFileName();
 export const getLineFromStack = (stack) => stack[0].getLineNumber();
 
-// log the filename, line number, function name, and auto stringify objects
+// log the filename, line number, and auto stringify objects
 export const log =
-  (config = {}) =>
+  (config: Config = { hideFile: false, hideTime: false }) =>
   (...args) => {
-    // Get the current stack using V8 api (https://v8.dev/docs/stack-trace-api)
     const orig = Error.prepareStackTrace;
     Error.prepareStackTrace = function (_, stack) {
       return stack;
@@ -18,11 +22,11 @@ export const log =
     Error.prepareStackTrace = orig;
 
     let s = '';
-    const file = config.hidefile ? '' : getFileFromStack(stack).slice(process.cwd().length);
+    const file = config.hideFile ? '' : getFileFromStack(stack).slice(process.cwd().length);
     if (file) {
       args.unshift(file + ':' + getLineFromStack(stack));
     }
-    if (!config.hidetime) {
+    if (!config.hideTime) {
       args.unshift(new Date().toISOString());
     }
     args.forEach((arg) => {
