@@ -1,7 +1,7 @@
 {
   "name": "cwip",
-  "version": "1.0.0",
-  "description": "Helpful utility functions for node js",
+  "version": "2.0.0",
+  "description": "Utility functions for node js",
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint . --ext .js,.ts --ignore-path .eslintignore",
