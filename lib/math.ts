@@ -1,31 +1,26 @@
-import { curry } from './functional';
+// NOTE not for use with big ints or very long decimals
 
-// NOTE does not currently work with big ints or very long decimals
+export const setPrecision = (precision: number, val: number): number => +val.toFixed(precision);
 
-export const setPrecision = curry(
-  (precision: number, val: number): number => +val.toFixed(precision),
-);
+export const round = (decimals: number, val: number): number =>
+  Number(Math.round(Number(val + 'e' + decimals)) + 'e-' + decimals);
 
-export const round = curry((decimals: number, val: number): number =>
-  Number(Math.round(Number(val + 'e' + decimals)) + 'e-' + decimals),
-);
+export const roundUp = (decimals: number, val: number): number =>
+  Number(Math.ceil(Number(val + 'e' + decimals)) + 'e-' + decimals);
 
-export const roundUp = curry((decimals: number, val: number): number =>
-  Number(Math.ceil(Number(val + 'e' + decimals)) + 'e-' + decimals),
-);
-
-export const roundDown = curry((decimals: number, val: number) =>
-  Number(Math.floor(Number(val + 'e' + decimals)) + 'e-' + decimals),
-);
+export const roundDown = (decimals: number, val: number) =>
+  Number(Math.floor(Number(val + 'e' + decimals)) + 'e-' + decimals);
 
 export const multiply = (v1: number, v2: number): number => {
   const signMult = (v1 < 0 && v2 > 0) || (v2 < 0 && v1 > 0) ? -1 : 1;
   const v1Decimals = countDecimals(v1);
   const v2Decimals = countDecimals(v2);
   const biggerDecimals = Math.max(v1Decimals, v2Decimals);
+
   // make array of strings to split and fill to same length
   const v1Arr = v1.toFixed(biggerDecimals).split('');
   const v2Arr = v2.toFixed(biggerDecimals).split('');
+
   if (v1Arr[0] === '-') {
     v1Arr.shift();
   }
@@ -38,16 +33,16 @@ export const multiply = (v1: number, v2: number): number => {
   if (v2Arr.includes('.')) {
     v2Arr.splice(v2Arr.indexOf('.'), 1);
   }
-  // vLess.concat(Array(biggerDecimals - v2Decimals).fill(0));
+
   const result = [];
   let carryNum = 0;
   /*
-    1.11
-    1.10
-    ----
-     000
-    1110
-   11100
+     1.11
+     1.10
+     ----
+      000
+     1110
+    11100
     -----
     1.2210
   */
@@ -55,23 +50,30 @@ export const multiply = (v1: number, v2: number): number => {
     const row = [];
     result.push(row);
 
-    const vs = Number(v2Arr[i]);
+    const currentV2Number = Number(v2Arr[i]);
 
+    // put in the beginning 0s for multiplying past the first digit
     if (i !== v2Arr.length - 1) {
       for (let ii = v2Arr.length - 1; ii > i; ii--) {
         row.push('0');
       }
     }
 
+    // multiply the current v2 number times each of the v1 number's digits from right to left
     for (let j = v1Arr.length - 1; j > -1; j--) {
-      const vl = Number(v1Arr[j]);
+      const currentV1Number = Number(v1Arr[j]);
 
-      const strAfterCarry = (vs * Number(v1Arr[j]) + carryNum).toFixed(0);
+      const strAfterCarry = (currentV2Number * Number(currentV1Number) + carryNum).toFixed(0);
 
+      // add the rightmost digit to the answer and save the tens place to carry over
       row.unshift(strAfterCarry.slice(strAfterCarry.length - 1));
 
       if (strAfterCarry.length > 1) {
         carryNum = Number(strAfterCarry.slice(0, strAfterCarry.length - 1)); // carry val for next iteration
+        if (j === 0) {
+          row.unshift(carryNum);
+          carryNum = 0;
+        }
       } else {
         carryNum = 0;
       }
@@ -126,8 +128,6 @@ export const doMath = (type: Operations, v1: number, v2: number) => {
   }
 
   // move decimal back to correct place
-  const strNum = tempAnswer.toString().toLowerCase();
-
   return Number(tempAnswer + 'e-' + biggerDecimals);
 };
 
@@ -140,13 +140,10 @@ export const countDecimals = (val: number): number => {
     return 0;
   }
   const strVal = val.toString();
-  if (strVal.indexOf('.') === -1) {
-    return 0;
-  }
   return strVal.split('.')[1].length;
 };
 
-export const convertScientificToDecimal = (num: number): string | number => {
+export const convertScientificToDecimal = (num: number): number => {
   const strNum: string = num.toString().toLowerCase();
 
   // check for each part of the notation

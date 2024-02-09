@@ -1,6 +1,6 @@
 import { truthy } from './types';
 
-export const ifIt = (cond, action, defaultTo) => (truthy(cond) ? action() : defaultTo);
+export const ifIt = (cond, action, val) => (truthy(cond) ? action(val) : val);
 
 const inner =
   (fn) =>

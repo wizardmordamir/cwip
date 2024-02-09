@@ -1,49 +1,71 @@
 import { existy } from './types';
 import { excludes } from './arrays';
 
-export const shallowClone = (obj) => Object.assign({}, obj);
-export const deepClone = (obj) => structuredClone(obj);
-export const extend = (...objects) => Object.assign({}, ...objects);
+type Obj = {
+  [key: string]: any;
+};
 
-export const excludesKeys = <T>(obj: T, keys: string[]): string[] =>
+export const shallowClone = (obj: Obj): Obj => Object.assign({}, obj);
+export const deepClone = (obj: Obj): Obj => structuredClone(obj);
+export const extend = (...objects: Obj[]): Object => Object.assign({}, ...objects);
+
+export const excludesKeys = (keys: string[], obj: Obj): string[] =>
   excludes(Object.keys(obj), keys);
 
 // safely stringify with circular references
-export const stringify = function stringify(o, spaces = 2) {
+export const stringify = (obj: Obj, spaces = 2): string => {
   const cache = [];
   return JSON.stringify(
-    o,
-    function (k, v) {
-      if (typeof v === 'object' && v !== null) {
-        if (cache.indexOf(v) !== -1) return;
-        cache.push(v);
+    obj,
+    function (key, val) {
+      if (typeof val === 'object' && val !== null) {
+        if (cache.indexOf(val) !== -1) {
+          return;
+        }
+        cache.push(val);
       }
-      return v;
+      return val;
     },
     spaces,
   );
 };
 
 // example: obj = { a: 1, b: 2, c: 3}, props = ['b', 'c'], return 'b'
-export const firstExistingProp = (obj, ...props) => {
-  if (Array.isArray(props[0])) {
-    props = props[0];
-  }
-  for (let i = 0; i < props.length; i++) {
-    if (existy(obj[props[i]])) {
-      return props[i];
+export const firstExistingKey = (keys: string[], obj: Obj): string => {
+  for (let i = 0; i < keys.length; i++) {
+    if (existy(obj[keys[i]])) {
+      return keys[i];
     }
   }
 };
 
 // example: obj = { a: 1, b: 2, c: 3}, props = ['b', 'c'], return 2
-export const firstExistingPropValue = (obj, ...props) => {
-  if (Array.isArray(props[0])) {
-    props = props[0];
-  }
-  for (let i = 0; i < props.length; i++) {
-    if (existy(obj[props[i]])) {
-      return obj[props[i]];
+export const firstExistingKeyValue = (keys: string[], obj: Obj): any => {
+  for (let i = 0; i < keys.length; i++) {
+    if (existy(obj[keys[i]])) {
+      return obj[keys[i]];
     }
   }
+};
+
+export const hasKey = (key: string, obj: Obj): boolean =>
+  Object.prototype.hasOwnProperty.call(obj, key);
+
+export const hasAllKeys = (keys: string[], obj: Obj): boolean => {
+  for (let i = 0; i < keys.length; i++) {
+    if (!hasKey(keys[i], obj)) {
+      return false;
+    }
+  }
+  return true;
+};
+
+export const getMissingKeys = (keys: string[], obj: Obj): string[] =>
+  keys.filter((key) => !hasKey(key, obj));
+
+export const removeKeys = (keys: string[], obj: Obj): Obj => {
+  for (let i = 0; i < keys.length; i++) {
+    delete obj[keys[i]];
+  }
+  return obj;
 };
