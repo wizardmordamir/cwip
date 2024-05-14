@@ -1,5 +1,7 @@
 // NOTE not for use with big ints or very long decimals
 
+import { isString } from './types';
+
 export const setPrecision = (precision: number, val: number): number => +val.toFixed(precision);
 
 export const round = (decimals: number, val: number): number =>
@@ -99,7 +101,7 @@ export const multiply = (v1: number, v2: number): number => {
 
 type Operations = 'add' | 'subtract' | 'divide';
 
-export const doMath = (type: Operations, v1: number, v2: number) => {
+export const doMath = (type: Operations, v1: number | string, v2: number | string) => {
   // check for scientific notation, convert to decimal
   if (v1.toString().includes('e-')) {
     v1 = convertScientificToDecimal(v1);
@@ -135,15 +137,15 @@ export const add = (v1: number, v2: number): number => doMath('add', v1, v2);
 export const subtract = (v1: number, v2: number): number => doMath('subtract', v1, v2);
 export const divide = (v1: number, v2: number): number => doMath('divide', v1, v2);
 
-export const countDecimals = (val: number): number => {
-  if (val % 1 === 0) {
+export const countDecimals = (val: number | string): number => {
+  if (!isString(val) && Number(val) % 1 === 0) {
     return 0;
   }
   const strVal = val.toString();
   return strVal.split('.')[1].length;
 };
 
-export const convertScientificToDecimal = (num: number): number => {
+export const convertScientificToDecimal = (num: number | string): number | string => {
   const strNum: string = num.toString().toLowerCase();
 
   // check for each part of the notation

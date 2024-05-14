@@ -8,8 +8,9 @@
     "esModuleInterop": true,
     "lib": ["ESNext"],
     "allowJs": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true
   },
   "include": ["*/**.ts", "index.ts", "server/envConfig.js", "server/app.js"],
-  "exclude": ["**/ui", "**/node_modules", "**/build"]
+  "exclude": ["**/ui", "**/node_modules", "**/build", "**/dist"]
 }

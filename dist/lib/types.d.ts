@@ -1,0 +1,11 @@
+export declare const existy: <T>(val: T) => boolean;
+export declare const truthy: <T>(val: T) => boolean;
+export declare const containsString: (string: string, substr: string, insensitive?: boolean) => boolean;
+export declare const isPrimitive: <T>(val: T) => boolean;
+export declare const isFunction: <T>(val: T) => boolean;
+export declare const isNumber: <T>(val: T) => boolean;
+export declare const isString: <T>(val: T) => boolean;
+export declare const isObject: <T>(val: T) => boolean;
+export declare const isEmpty: <T>(obj: T) => boolean;
+export declare const stringIncludesAny: (strings: string[], string: string, insensitive?: boolean) => boolean;
+//# sourceMappingURL=types.d.ts.map
