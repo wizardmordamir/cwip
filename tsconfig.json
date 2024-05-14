@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es6",
+    "target": "es2015",
     "baseUrl": "./",
-    "outDir": "build",
+    "outDir": "dist",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "lib": ["ESNext"],

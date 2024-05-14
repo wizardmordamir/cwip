@@ -3,9 +3,9 @@
   "version": "1.0.2",
   "description": "Utility functions for node js",
   "main": "dist/index.js",
-  "type": "module",
   "scripts": {
     "build:types": "tsc -d --declarationDir dist --declarationMap --emitDeclarationOnly",
+    "build:tsc": "tsc -d --declarationDir dist --declarationMap",
     "lint": "eslint . --ext .js,.ts --ignore-path .eslintignore",
     "prettier:check": "npx prettier . --check",
     "bun:test": "bun test --coverage",

@@ -1,17 +1,28 @@
 import { stringify } from './objects';
 
 type Config = {
-  hideFile: boolean;
-  hideTime: boolean;
-  useLocalTime: boolean;
+  hideFile?: boolean;
+  hideTime?: boolean;
+  hideLine?: boolean;
+  useLocalTime?: boolean;
+  timeFunction?: Function;
+  stackIndex?: number;
 };
 
-export const getFileFromStack = (stack) => stack[0].getFileName();
-export const getLineFromStack = (stack) => stack[0].getLineNumber();
+export const getFileFromStack = (stack, index) => stack[index].getFileName();
+export const getLineFromStack = (stack, index) => stack[index].getLineNumber();
 
 // log the filename, line number, and auto stringify objects
 export const log =
-  (config: Config = { hideFile: false, hideTime: false, useLocalTime: true }) =>
+  (
+    config: Config = {
+      hideFile: false,
+      hideTime: false,
+      hideLine: false,
+      useLocalTime: true,
+      stackIndex: 1,
+    },
+  ) =>
   (...args) => {
     const orig = Error.prepareStackTrace;
     Error.prepareStackTrace = function (_, stack) {
@@ -23,14 +34,23 @@ export const log =
     Error.prepareStackTrace = orig;
 
     let s = '';
-    const file = config.hideFile ? '' : getFileFromStack(stack).slice(process.cwd().length);
+    const file = config.hideFile
+      ? ''
+      : getFileFromStack(stack, config.stackIndex).slice(process.cwd().length);
     if (file) {
-      args.unshift(file + ':' + getLineFromStack(stack));
+      if (config.hideLine) {
+        args.unshift(file);
+      } else {
+        args.unshift(file + ':' + getLineFromStack(stack, config.stackIndex));
+      }
     }
     if (!config.hideTime) {
-      if (config.useLocalTime) {
+      if (config.timeFunction) {
+        args.unshift(config.timeFunction());
+      } else if (config.useLocalTime) {
         const offsetMs = new Date().getTimezoneOffset() * 60000;
-        const localISOTime = new Date(Date.now() - offsetMs).toISOString().slice(0, -1);
+        let localISOTime = new Date(Date.now() - offsetMs).toISOString().slice(0, -1);
+        localISOTime.replace('T', ' ');
         args.unshift(localISOTime);
       } else {
         args.unshift(new Date().toISOString());
