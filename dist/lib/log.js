@@ -11,7 +11,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createLogger = exports.getLineFromStack = exports.getFileFromStack = exports.validLogLevels = void 0;
+exports.createLogger = exports.getLineFromStack = exports.getFileFromStack = exports.logSettings = exports.validLogLevels = void 0;
 const objects_1 = require("./objects");
 exports.validLogLevels = ['trace', 'debug', 'info', 'warn', 'error'];
 const traceIndex = exports.validLogLevels.indexOf('trace');
@@ -19,8 +19,6 @@ const debugIndex = exports.validLogLevels.indexOf('debug');
 const infoIndex = exports.validLogLevels.indexOf('info');
 const warnIndex = exports.validLogLevels.indexOf('warn');
 const errorIndex = exports.validLogLevels.indexOf('error');
-let loggerUpdater;
-let logger;
 let currentConfig = {
     pino: null,
     name: '',
@@ -36,11 +34,16 @@ let currentConfig = {
     stackIndex: 3,
     level: 'info',
 };
+exports.logSettings = {
+    logger: null,
+    currentConfig,
+};
+let loggerUpdater;
 const getFileFromStack = (stack, index) => stack[index].getFileName();
 exports.getFileFromStack = getFileFromStack;
 const getLineFromStack = (stack, index) => stack[index].getLineNumber();
 exports.getLineFromStack = getLineFromStack;
-const getFileDetails = (index = currentConfig.stackIndex) => {
+const getFileDetails = (index = exports.logSettings.currentConfig.stackIndex) => {
     const orig = Error.prepareStackTrace;
     Error.prepareStackTrace = function (_, stack) {
         return stack;
@@ -49,12 +52,14 @@ const getFileDetails = (index = currentConfig.stackIndex) => {
     Error.captureStackTrace(err);
     const stack = err.stack;
     Error.prepareStackTrace = orig;
-    const file = currentConfig.hideFile
+    const file = exports.logSettings.currentConfig.hideFile
         ? ''
-        : (0, exports.getFileFromStack)(stack, currentConfig.stackIndex).slice(process.cwd().length);
-    const line = currentConfig.hideLine ? '' : (0, exports.getLineFromStack)(stack, currentConfig.stackIndex);
+        : (0, exports.getFileFromStack)(stack, exports.logSettings.currentConfig.stackIndex).slice(process.cwd().length);
+    const line = exports.logSettings.currentConfig.hideLine
+        ? ''
+        : (0, exports.getLineFromStack)(stack, exports.logSettings.currentConfig.stackIndex);
     if (file) {
-        if (currentConfig.hideLine) {
+        if (exports.logSettings.currentConfig.hideLine) {
             return file;
         }
         else {
@@ -65,11 +70,11 @@ const getFileDetails = (index = currentConfig.stackIndex) => {
 };
 const defaultLog = (...args) => {
     let s = '';
-    if (!currentConfig.hideTime) {
-        if (currentConfig.timeFunction) {
-            s += currentConfig.timeFunction();
+    if (!exports.logSettings.currentConfig.hideTime) {
+        if (exports.logSettings.currentConfig.timeFunction) {
+            s += exports.logSettings.currentConfig.timeFunction();
         }
-        else if (currentConfig.useLocalTime) {
+        else if (exports.logSettings.currentConfig.useLocalTime) {
             const offsetMs = new Date().getTimezoneOffset() * 60000;
             let localISOTime = new Date(Date.now() - offsetMs).toISOString().slice(0, -1);
             localISOTime.replace('T', ' ');
@@ -93,27 +98,27 @@ const defaultLog = (...args) => {
 const defaultLogger = function (config) {
     return {
         trace: (...args) => {
-            if (exports.validLogLevels.indexOf(currentConfig.level) >= traceIndex) {
+            if (exports.validLogLevels.indexOf(exports.logSettings.currentConfig.level) >= traceIndex) {
                 defaultLog(...args);
             }
         },
         debug: (...args) => {
-            if (exports.validLogLevels.indexOf(currentConfig.level) >= debugIndex) {
+            if (exports.validLogLevels.indexOf(exports.logSettings.currentConfig.level) >= debugIndex) {
                 defaultLog(...args);
             }
         },
         info: (...args) => {
-            if (exports.validLogLevels.indexOf(currentConfig.level) >= infoIndex) {
+            if (exports.validLogLevels.indexOf(exports.logSettings.currentConfig.level) >= infoIndex) {
                 defaultLog(...args);
             }
         },
         warn: (...args) => {
-            if (exports.validLogLevels.indexOf(currentConfig.level) >= warnIndex) {
+            if (exports.validLogLevels.indexOf(exports.logSettings.currentConfig.level) >= warnIndex) {
                 defaultLog(...args);
             }
         },
         error: (...args) => {
-            if (exports.validLogLevels.indexOf(currentConfig.level) >= errorIndex) {
+            if (exports.validLogLevels.indexOf(exports.logSettings.currentConfig.level) >= errorIndex) {
                 defaultLog(...args);
             }
         },
@@ -121,24 +126,23 @@ const defaultLogger = function (config) {
 };
 const createLogger = (config = {}) => {
     const { pino } = config, restConfig = __rest(config, ["pino"]);
-    currentConfig = Object.assign({}, currentConfig, restConfig);
+    exports.logSettings.currentConfig = Object.assign({}, exports.logSettings.currentConfig, restConfig);
     loggerUpdater = pino !== null && pino !== void 0 ? pino : defaultLogger;
-    logger = loggerUpdater(config);
-    logger.update = (config) => {
+    exports.logSettings.logger = loggerUpdater(config);
+    exports.logSettings.logger.update = (config) => {
         const { pino } = config, restConfig = __rest(config, ["pino"]);
-        console.log('****** restconfig:', JSON.stringify(restConfig));
-        logger = loggerUpdater(restConfig);
+        exports.logSettings.logger = loggerUpdater(restConfig);
     };
     if (!pino) {
-        return Object.assign({}, logger);
+        return Object.assign({}, exports.logSettings.logger);
     }
     return {
-        trace: (...args) => logger.trace(getFileDetails(), ...args),
-        debug: (...args) => logger.debug(getFileDetails(), ...args),
-        info: (...args) => logger.info(getFileDetails(), ...args),
-        warn: (...args) => logger.warn(getFileDetails(), ...args),
-        error: (...args) => logger.error(getFileDetails(), ...args),
-        update: logger.update,
+        trace: (...args) => exports.logSettings.logger.trace(getFileDetails(), ...args),
+        debug: (...args) => exports.logSettings.logger.debug(getFileDetails(), ...args),
+        info: (...args) => exports.logSettings.logger.info(getFileDetails(), ...args),
+        warn: (...args) => exports.logSettings.logger.warn(getFileDetails(), ...args),
+        error: (...args) => exports.logSettings.logger.error(getFileDetails(), ...args),
+        update: exports.logSettings.logger.update,
     };
 };
 exports.createLogger = createLogger;

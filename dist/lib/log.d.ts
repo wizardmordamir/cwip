@@ -15,6 +15,10 @@ type LoggerConfig = {
     stackIndex?: number;
     level?: 'trace' | 'debug' | 'info' | 'warn' | 'error';
 };
+export declare const logSettings: {
+    logger: any;
+    currentConfig: LoggerConfig;
+};
 export declare const getFileFromStack: (stack: any, index: any) => any;
 export declare const getLineFromStack: (stack: any, index: any) => any;
 export declare const createLogger: (config?: LoggerConfig) => any;

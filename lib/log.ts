@@ -24,9 +24,6 @@ type LoggerConfig = {
   level?: 'trace' | 'debug' | 'info' | 'warn' | 'error';
 };
 
-let loggerUpdater;
-let logger;
-
 let currentConfig: LoggerConfig = {
   pino: null,
   name: '',
@@ -43,10 +40,17 @@ let currentConfig: LoggerConfig = {
   level: 'info',
 };
 
+export const logSettings = {
+  logger: null,
+  currentConfig,
+};
+
+let loggerUpdater;
+
 export const getFileFromStack = (stack, index) => stack[index].getFileName();
 export const getLineFromStack = (stack, index) => stack[index].getLineNumber();
 
-const getFileDetails = (index = currentConfig.stackIndex) => {
+const getFileDetails = (index = logSettings.currentConfig.stackIndex) => {
   const orig = Error.prepareStackTrace;
   Error.prepareStackTrace = function (_, stack) {
     return stack;
@@ -56,12 +60,14 @@ const getFileDetails = (index = currentConfig.stackIndex) => {
   const stack = err.stack;
   Error.prepareStackTrace = orig;
 
-  const file = currentConfig.hideFile
+  const file = logSettings.currentConfig.hideFile
     ? ''
-    : getFileFromStack(stack, currentConfig.stackIndex).slice(process.cwd().length);
-  const line = currentConfig.hideLine ? '' : getLineFromStack(stack, currentConfig.stackIndex);
+    : getFileFromStack(stack, logSettings.currentConfig.stackIndex).slice(process.cwd().length);
+  const line = logSettings.currentConfig.hideLine
+    ? ''
+    : getLineFromStack(stack, logSettings.currentConfig.stackIndex);
   if (file) {
-    if (currentConfig.hideLine) {
+    if (logSettings.currentConfig.hideLine) {
       return file;
     } else {
       return file + ':' + line;
@@ -72,10 +78,10 @@ const getFileDetails = (index = currentConfig.stackIndex) => {
 
 const defaultLog = (...args) => {
   let s = '';
-  if (!currentConfig.hideTime) {
-    if (currentConfig.timeFunction) {
-      s += currentConfig.timeFunction();
-    } else if (currentConfig.useLocalTime) {
+  if (!logSettings.currentConfig.hideTime) {
+    if (logSettings.currentConfig.timeFunction) {
+      s += logSettings.currentConfig.timeFunction();
+    } else if (logSettings.currentConfig.useLocalTime) {
       const offsetMs = new Date().getTimezoneOffset() * 60000;
       let localISOTime = new Date(Date.now() - offsetMs).toISOString().slice(0, -1);
       localISOTime.replace('T', ' ');
@@ -100,27 +106,27 @@ const defaultLog = (...args) => {
 const defaultLogger = function (config) {
   return {
     trace: (...args) => {
-      if (validLogLevels.indexOf(currentConfig.level) >= traceIndex) {
+      if (validLogLevels.indexOf(logSettings.currentConfig.level) >= traceIndex) {
         defaultLog(...args);
       }
     },
     debug: (...args) => {
-      if (validLogLevels.indexOf(currentConfig.level) >= debugIndex) {
+      if (validLogLevels.indexOf(logSettings.currentConfig.level) >= debugIndex) {
         defaultLog(...args);
       }
     },
     info: (...args) => {
-      if (validLogLevels.indexOf(currentConfig.level) >= infoIndex) {
+      if (validLogLevels.indexOf(logSettings.currentConfig.level) >= infoIndex) {
         defaultLog(...args);
       }
     },
     warn: (...args) => {
-      if (validLogLevels.indexOf(currentConfig.level) >= warnIndex) {
+      if (validLogLevels.indexOf(logSettings.currentConfig.level) >= warnIndex) {
         defaultLog(...args);
       }
     },
     error: (...args) => {
-      if (validLogLevels.indexOf(currentConfig.level) >= errorIndex) {
+      if (validLogLevels.indexOf(logSettings.currentConfig.level) >= errorIndex) {
         defaultLog(...args);
       }
     },
@@ -129,29 +135,28 @@ const defaultLogger = function (config) {
 
 export const createLogger = (config: LoggerConfig = {}) => {
   const { pino, ...restConfig } = config;
-  currentConfig = Object.assign({}, currentConfig, restConfig);
+  logSettings.currentConfig = Object.assign({}, logSettings.currentConfig, restConfig);
 
   loggerUpdater = pino ?? defaultLogger;
-  logger = loggerUpdater(config);
+  logSettings.logger = loggerUpdater(config);
 
-  logger.update = (config: LoggerConfig) => {
+  logSettings.logger.update = (config: LoggerConfig) => {
     const { pino, ...restConfig } = config;
-    console.log('****** restconfig:', JSON.stringify(restConfig));
-    logger = loggerUpdater(restConfig);
+    logSettings.logger = loggerUpdater(restConfig);
   };
 
   if (!pino) {
     return {
-      ...logger,
+      ...logSettings.logger,
     };
   }
 
   return {
-    trace: (...args) => logger.trace(getFileDetails(), ...args),
-    debug: (...args) => logger.debug(getFileDetails(), ...args),
-    info: (...args) => logger.info(getFileDetails(), ...args),
-    warn: (...args) => logger.warn(getFileDetails(), ...args),
-    error: (...args) => logger.error(getFileDetails(), ...args),
-    update: logger.update,
+    trace: (...args) => logSettings.logger.trace(getFileDetails(), ...args),
+    debug: (...args) => logSettings.logger.debug(getFileDetails(), ...args),
+    info: (...args) => logSettings.logger.info(getFileDetails(), ...args),
+    warn: (...args) => logSettings.logger.warn(getFileDetails(), ...args),
+    error: (...args) => logSettings.logger.error(getFileDetails(), ...args),
+    update: logSettings.logger.update,
   };
 };
