@@ -46,8 +46,8 @@ export const logSettings: LogSettingsType = { logger: null, currentConfig, depth
 
 let loggerUpdater;
 
-export const getFileFromStack = (stack, index) => stack[index].getFileName();
-export const getLineFromStack = (stack, index) => stack[index].getLineNumber();
+export const getFileFromStack = (stack, index) => stack[index]?.getFileName() || '';
+export const getLineFromStack = (stack, index) => stack[index]?.getLineNumber() || '';
 
 const getFileDetails = (index = logSettings.currentConfig.stackIndex) => {
   const orig = Error.prepareStackTrace;
