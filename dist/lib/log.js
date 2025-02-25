@@ -23,15 +23,11 @@ let currentConfig = {
     stackIndex: 3,
     level: 'info',
 };
-exports.logSettings = {
-    logger: null,
-    currentConfig,
-    depth: console.log,
-};
+exports.logSettings = { logger: null, currentConfig, depth: console.log };
 let loggerUpdater;
-const getFileFromStack = (stack, index) => stack[index].getFileName();
+const getFileFromStack = (stack, index) => stack[index]?.getFileName() || '';
 exports.getFileFromStack = getFileFromStack;
-const getLineFromStack = (stack, index) => stack[index].getLineNumber();
+const getLineFromStack = (stack, index) => stack[index]?.getLineNumber() || '';
 exports.getLineFromStack = getLineFromStack;
 const getFileDetails = (index = exports.logSettings.currentConfig.stackIndex) => {
     const orig = Error.prepareStackTrace;
@@ -122,9 +118,7 @@ const createLogger = (config = {}) => {
         exports.logSettings.logger = loggerUpdater(restConfig);
     };
     if (!pino) {
-        return {
-            ...exports.logSettings.logger,
-        };
+        return { ...exports.logSettings.logger };
     }
     const fns = {
         trace: (...args) => exports.logSettings.logger.trace(getFileDetails(), ...args),

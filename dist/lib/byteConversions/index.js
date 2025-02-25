@@ -18,13 +18,7 @@ exports.GBInTB = 1_024;
 exports.TBInKB = 9.313225746154785e-10;
 exports.TBInMB = 9.5367431640625e-7;
 exports.TBInGB = 0.0009765625;
-const byteMap = {
-    bytes: 1,
-    kb: exports.bytesInKB,
-    mb: exports.bytesInMB,
-    gb: exports.bytesInGB,
-    tb: exports.bytesInTB,
-};
+const byteMap = { bytes: 1, kb: exports.bytesInKB, mb: exports.bytesInMB, gb: exports.bytesInGB, tb: exports.bytesInTB };
 const convertToBytes = (val, convertType) => (0, math_1.multiply)(val, byteMap[convertType]);
 exports.convertToBytes = convertToBytes;
 const convertBytesTo = (bytes, convertType) => (0, math_1.doMath)('divide', bytes, byteMap[convertType]);

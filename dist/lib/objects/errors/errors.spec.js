@@ -68,11 +68,7 @@ describe('errors', () => {
         });
         it('should handle failing parsing axios response', () => {
             const err = new Error('test error');
-            err.response = {
-                data: {
-                    vals: '',
-                },
-            };
+            err.response = { data: { vals: '' } };
             err.response.data.vals = err.response; // make a circular reference
             const errMsg = (0, _1.getMessageFromError)(err);
             expect(typeof errMsg).toBe('string');

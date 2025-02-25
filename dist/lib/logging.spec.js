@@ -80,33 +80,13 @@ describe('logging', () => {
             expect(password).toEqual('testPassword');
             let opts;
             expect(cleanDataForLogging(opts)).toEqual(undefined);
-            opts = {
-                auth: password,
-            };
+            opts = { auth: password };
             expect(cleanDataForLogging(opts)).toEqual({ auth: hidden });
-            opts = {
-                headers: {
-                    Authorization: password,
-                },
-            };
+            opts = { headers: { Authorization: password } };
+            expect(cleanDataForLogging(opts)).toEqual({ headers: { Authorization: hidden } });
+            opts = { data: [{ thumbnailPhoto: password }] };
             expect(cleanDataForLogging(opts)).toEqual({
-                headers: {
-                    Authorization: hidden,
-                },
-            });
-            opts = {
-                data: [
-                    {
-                        thumbnailPhoto: password,
-                    },
-                ],
-            };
-            expect(cleanDataForLogging(opts)).toEqual({
-                data: [
-                    {
-                        thumbnailPhoto: password.slice(0, 5),
-                    },
-                ],
+                data: [{ thumbnailPhoto: password.slice(0, 5) }],
             });
         });
     });

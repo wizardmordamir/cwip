@@ -50,10 +50,7 @@ const shouldLogMessage = (message, group = 'default') => {
         exports.loggingSettings.priorMessages[group] = [];
     }
     if (!exports.loggingSettings.priorMessages[group][message]) {
-        exports.loggingSettings.priorMessages[group][message] = {
-            date: new Date(),
-            count: 1,
-        };
+        exports.loggingSettings.priorMessages[group][message] = { date: new Date(), count: 1 };
         return true;
     }
     // check if enough time has elapsed since counter began

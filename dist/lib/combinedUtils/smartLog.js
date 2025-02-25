@@ -73,38 +73,13 @@ exports.smartLog = smartLog;
 // smartLogger(defaults).error('error:', error))
 const smartLogger = ({ group, vals, skipShouldLogMessageCheck, depth, timer, }) => {
     // these are the same for each log type
-    const defaultSmartLogParams = {
-        group,
-        skipShouldLogMessageCheck,
-        depth,
-        timer,
-    };
+    const defaultSmartLogParams = { group, skipShouldLogMessageCheck, depth, timer };
     return {
-        error: (...args) => (0, exports.smartLog)({
-            ...defaultSmartLogParams,
-            type: 'error',
-            vals: [...vals, ...args],
-        }),
-        trace: (...args) => (0, exports.smartLog)({
-            ...defaultSmartLogParams,
-            type: 'trace',
-            vals: [...vals, ...args],
-        }),
-        debug: (...args) => (0, exports.smartLog)({
-            ...defaultSmartLogParams,
-            type: 'debug',
-            vals: [...vals, ...args],
-        }),
-        info: (...args) => (0, exports.smartLog)({
-            ...defaultSmartLogParams,
-            type: 'info',
-            vals: [...vals, ...args],
-        }),
-        warn: (...args) => (0, exports.smartLog)({
-            ...defaultSmartLogParams,
-            type: 'warn',
-            vals: [...vals, ...args],
-        }),
+        error: (...args) => (0, exports.smartLog)({ ...defaultSmartLogParams, type: 'error', vals: [...vals, ...args] }),
+        trace: (...args) => (0, exports.smartLog)({ ...defaultSmartLogParams, type: 'trace', vals: [...vals, ...args] }),
+        debug: (...args) => (0, exports.smartLog)({ ...defaultSmartLogParams, type: 'debug', vals: [...vals, ...args] }),
+        info: (...args) => (0, exports.smartLog)({ ...defaultSmartLogParams, type: 'info', vals: [...vals, ...args] }),
+        warn: (...args) => (0, exports.smartLog)({ ...defaultSmartLogParams, type: 'warn', vals: [...vals, ...args] }),
     };
 };
 exports.smartLogger = smartLogger;
