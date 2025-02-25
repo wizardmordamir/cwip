@@ -206,7 +206,7 @@ describe('times', () => {
 
     it('should get time past date for days', () => {
       const dateString = new Date().toISOString();
-      expect(timePastDate('days', dateString)).toEqual(0);
+      expect(timePastDate('days', dateString, new Date())).toEqual(0);
     });
 
     it('should get time past date for full year for days', () => {

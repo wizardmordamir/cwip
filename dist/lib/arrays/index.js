@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.zip = exports.without = exports.splice = exports.removeDupsPrimitive = exports.removeDups = exports.includes = exports.excludes = void 0;
+exports.zip = exports.without = exports.splice = exports.removeDupsPrimitive = exports.removeDups = exports.includesDeep = exports.excludes = void 0;
 var excludes_1 = require("./excludes");
 Object.defineProperty(exports, "excludes", { enumerable: true, get: function () { return excludes_1.excludes; } });
-var includes_1 = require("./includes");
-Object.defineProperty(exports, "includes", { enumerable: true, get: function () { return includes_1.includes; } });
+var includesDeep_1 = require("./includesDeep");
+Object.defineProperty(exports, "includesDeep", { enumerable: true, get: function () { return includesDeep_1.includesDeep; } });
 var removeDups_1 = require("./removeDups");
 Object.defineProperty(exports, "removeDups", { enumerable: true, get: function () { return removeDups_1.removeDups; } });
 var removeDupsPrimitive_1 = require("./removeDupsPrimitive");

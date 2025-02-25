@@ -1,5 +1,5 @@
 export { excludes } from './excludes';
-export { includes } from './includes';
+export { includesDeep } from './includesDeep';
 export { removeDups } from './removeDups';
 export { removeDupsPrimitive } from './removeDupsPrimitive';
 export { splice } from './splice';
