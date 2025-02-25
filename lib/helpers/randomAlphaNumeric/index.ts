@@ -6,6 +6,3 @@ export const randomAlpahNumeric = function (length: number) {
   }
   return result;
 };
-
-export const sleep = async (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));

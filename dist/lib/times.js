@@ -90,13 +90,13 @@ const getLocalDate = (date, format = '') => {
     return (0, exports.momentValidate)(d, format);
 };
 exports.getLocalDate = getLocalDate;
-exports.timePastDate = (0, functional_1.curry)((timeType, older, newer = (0, exports.getUTCDate)()) => (0, exports.getUTCDate)(newer).diff((0, exports.getUTCDate)(older), timeType));
+exports.timePastDate = (0, functional_1.curry)((timeType, older, newer) => (0, exports.getUTCDate)(newer).diff((0, exports.getUTCDate)(older), timeType));
 exports.minutesPastDateMoment = (0, exports.timePastDate)('minutes');
 exports.hoursPastDateMoment = (0, exports.timePastDate)('hours');
 exports.daysPastDateMoment = (0, exports.timePastDate)('days');
 const hoursPastDate = (date, oldDate = new Date()) => {
     if (moment) {
-        return (0, exports.hoursPastDateMoment)();
+        return (0, exports.hoursPastDateMoment)(oldDate, date);
     }
     else {
         return Math.abs(date.getTime() - oldDate.getTime()) / 3600000;

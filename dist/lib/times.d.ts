@@ -33,10 +33,10 @@ export declare const getTimeStringFormat: (dateString: any) => string;
 export declare const getUTCDate: (original?: any, currentFormat?: string, format?: string) => any;
 export declare const getESTDate: (date: any, format?: string) => any;
 export declare const getLocalDate: (date: any, format?: string) => any;
-export declare const timePastDate: (...args: any[]) => any;
-export declare const minutesPastDateMoment: any;
-export declare const hoursPastDateMoment: any;
-export declare const daysPastDateMoment: any;
-export declare const hoursPastDate: (date: any, oldDate?: Date) => any;
-export declare const timePastDateExcludeWeekend: (timeType: string, older: Date | string, newer?: Date | string) => any;
+export declare const timePastDate: import("./functional/typescriptUtils").Curry<[timeType: any, older: any, newer: any], number>;
+export declare const minutesPastDateMoment: import("./functional/typescriptUtils").Curry<[older: any, newer: any], number>;
+export declare const hoursPastDateMoment: import("./functional/typescriptUtils").Curry<[older: any, newer: any], number>;
+export declare const daysPastDateMoment: import("./functional/typescriptUtils").Curry<[older: any, newer: any], number>;
+export declare const hoursPastDate: (date: Date, oldDate?: Date) => number;
+export declare const timePastDateExcludeWeekend: (timeType: string, older: Date | string, newer?: Date | string) => number;
 //# sourceMappingURL=times.d.ts.map

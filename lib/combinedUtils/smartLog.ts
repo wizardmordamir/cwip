@@ -1,4 +1,4 @@
-import { logSettings } from '../log';
+import { logSettings } from '..';
 import { getMessageFromError, shouldLogMessage } from '..';
 
 export const smartLogSettings = {

@@ -91,7 +91,7 @@ export const getLocalDate = (date, format = '') => {
   return momentValidate(d, format);
 };
 
-export const timePastDate = curry((timeType, older, newer = getUTCDate()) =>
+export const timePastDate = curry((timeType, older, newer): number =>
   getUTCDate(newer).diff(getUTCDate(older), timeType),
 );
 
@@ -99,9 +99,9 @@ export const minutesPastDateMoment = timePastDate('minutes');
 export const hoursPastDateMoment = timePastDate('hours');
 export const daysPastDateMoment = timePastDate('days');
 
-export const hoursPastDate = (date, oldDate = new Date()) => {
+export const hoursPastDate = (date: Date, oldDate = new Date()): number => {
   if (moment) {
-    return hoursPastDateMoment();
+    return hoursPastDateMoment(oldDate, date);
   } else {
     return Math.abs(date.getTime() - oldDate.getTime()) / 3600000;
   }

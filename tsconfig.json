@@ -11,13 +11,6 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true
   },
-  "include": [
-    "*/**.ts",
-    "index.ts",
-    "server/envConfig.js",
-    "server/app.js",
-    "lib/arrays/arrays.ts",
-    "lib/objects"
-  ],
-  "exclude": ["**/ui", "**/node_modules", "**/build", "**/dist"]
+  "include": ["index.ts"],
+  "exclude": ["**/node_modules", "dist"]
 }

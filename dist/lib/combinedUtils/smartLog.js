@@ -1,16 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.smartLogger = exports.smartLog = exports.handleError = exports.smartLogSettings = void 0;
-const log_1 = require("../log");
 const __1 = require("..");
+const __2 = require("..");
 exports.smartLogSettings = {
     timer: 300_000,
     groupInclusions: [], // add strings from logs to use to group
 };
 const handleError = (err, prefix = '') => {
-    const errMsg = (0, __1.getMessageFromError)(err);
-    if ((0, __1.shouldLogMessage)(errMsg, prefix)) {
-        log_1.logSettings.logger.error(prefix, errMsg);
+    const errMsg = (0, __2.getMessageFromError)(err);
+    if ((0, __2.shouldLogMessage)(errMsg, prefix)) {
+        __1.logSettings.logger.error(prefix, errMsg);
     }
     return errMsg;
 };
@@ -48,16 +48,16 @@ const smartLog = ({ type = 'error', group = '', vals = [], skipShouldLogMessageC
             if (group) {
                 startBlockLoggingTimer(group || joinedVals, timer);
             }
-            if (skipShouldLogMessageCheck || (0, __1.shouldLogMessage)(joinedVals)) {
+            if (skipShouldLogMessageCheck || (0, __2.shouldLogMessage)(joinedVals)) {
                 let updatedLogVals;
                 if (type === 'error' && vals[vals.length - 1] instanceof Error) {
-                    updatedLogVals = [...vals.slice(0, -1), (0, __1.getMessageFromError)(vals[-1], '')];
+                    updatedLogVals = [...vals.slice(0, -1), (0, __2.getMessageFromError)(vals[-1], '')];
                 }
                 if (group) {
-                    log_1.logSettings.depth(depth, type, group, ...(updatedLogVals || vals));
+                    __1.logSettings.depth(depth, type, group, ...(updatedLogVals || vals));
                 }
                 else {
-                    log_1.logSettings.depth(depth, type, ...(updatedLogVals || vals));
+                    __1.logSettings.depth(depth, type, ...(updatedLogVals || vals));
                 }
             }
         }
