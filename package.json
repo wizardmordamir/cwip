@@ -1,13 +1,15 @@
 {
   "name": "cwip",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Utility functions for node js",
   "main": "dist/index.js",
+  "type": "commonjs",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build:types": "tsc -d --declarationDir dist --declarationMap --emitDeclarationOnly",
     "build:tsc": "tsc -d --declarationDir dist --declarationMap",
     "lint": "eslint . --ext .js,.ts --ignore-path .eslintignore",
-    "format": "npx prettier . --write",
+    "format": "npx prettier --write . | grep -v '(unchanged)'",
     "bun:test": "bun test --coverage",
     "test": "jest --coverage",
     "update:dev": "npm update --dev"
@@ -40,5 +42,8 @@
     "moment-timezone": "^0.5.45",
     "prettier": "^4.0.0-alpha.8",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "bun": "^1.2.3"
   }
 }
