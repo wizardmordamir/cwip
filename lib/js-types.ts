@@ -15,20 +15,20 @@ export const isNumber = <T>(val: T): boolean => Number.isFinite(val);
 // false for instanceof String
 export const isString = <T>(val: T): boolean => typeof val === 'string';
 
-export const isObject = <T>(val: T): boolean =>
+export const isObjectNotArray = <T>(val: T): boolean =>
   typeof val === 'object' && val !== null && !Array.isArray(val);
 
 // return true if all keys in obj are either not existy, empty arrays, or empty objects
-export const isEmpty = <T>(obj: T): boolean =>
+export const isEmptyDeep = <T>(obj: T): boolean =>
   isPrimitive(obj)
     ? !existy(obj)
     : Array.isArray(obj)
-      ? obj.every((a) => isEmpty(a))
+      ? obj.every((a) => isEmptyDeep(a))
       : Object.keys(obj).every((k) =>
           Array.isArray(obj[k])
-            ? obj[k].every((a) => isEmpty(a))
-            : isObject(obj[k])
-              ? isEmpty(obj[k])
+            ? obj[k].every((a) => isEmptyDeep(a))
+            : isObjectNotArray(obj[k])
+              ? isEmptyDeep(obj[k])
               : !existy(obj[k]),
         );
 

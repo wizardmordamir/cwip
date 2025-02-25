@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stringIncludesAny = exports.isEmpty = exports.isObject = exports.isString = exports.isNumber = exports.isFunction = exports.isPrimitive = exports.containsString = exports.truthy = exports.existy = void 0;
+exports.stringIncludesAny = exports.isEmptyDeep = exports.isObjectNotArray = exports.isString = exports.isNumber = exports.isFunction = exports.isPrimitive = exports.containsString = exports.truthy = exports.existy = void 0;
 const existy = (val) => typeof val !== 'undefined' && val !== null;
 exports.existy = existy;
 const truthy = (val) => val !== false && (0, exports.existy)(val);
@@ -18,19 +18,19 @@ exports.isNumber = isNumber;
 // false for instanceof String
 const isString = (val) => typeof val === 'string';
 exports.isString = isString;
-const isObject = (val) => typeof val === 'object' && val !== null && !Array.isArray(val);
-exports.isObject = isObject;
+const isObjectNotArray = (val) => typeof val === 'object' && val !== null && !Array.isArray(val);
+exports.isObjectNotArray = isObjectNotArray;
 // return true if all keys in obj are either not existy, empty arrays, or empty objects
-const isEmpty = (obj) => (0, exports.isPrimitive)(obj)
+const isEmptyDeep = (obj) => (0, exports.isPrimitive)(obj)
     ? !(0, exports.existy)(obj)
     : Array.isArray(obj)
-        ? obj.every((a) => (0, exports.isEmpty)(a))
+        ? obj.every((a) => (0, exports.isEmptyDeep)(a))
         : Object.keys(obj).every((k) => Array.isArray(obj[k])
-            ? obj[k].every((a) => (0, exports.isEmpty)(a))
-            : (0, exports.isObject)(obj[k])
-                ? (0, exports.isEmpty)(obj[k])
+            ? obj[k].every((a) => (0, exports.isEmptyDeep)(a))
+            : (0, exports.isObjectNotArray)(obj[k])
+                ? (0, exports.isEmptyDeep)(obj[k])
                 : !(0, exports.existy)(obj[k]));
-exports.isEmpty = isEmpty;
+exports.isEmptyDeep = isEmptyDeep;
 const stringIncludesAny = (strings, string, insensitive = false) => {
     if (insensitive) {
         string = string.toLowerCase();
