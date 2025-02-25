@@ -1,9 +1,9 @@
 import { hoursPastDate } from './times';
-import { isString } from './types';
+import { isString } from './js-types';
 
 type Obj = Record<string, any>;
 
-type LoggingSettings = {
+export type LoggingSettings = {
   disableSameMessagesLimit: boolean;
   redactionText: string;
   secretProps: string[];
@@ -14,7 +14,7 @@ type LoggingSettings = {
 export const loggingSettings: LoggingSettings = {
   disableSameMessagesLimit: false,
   redactionText: 'HIDDEN',
-  secretProps: Object.keys(process.env).filter(
+  secretProps: Object.keys(process.env || {}).filter(
     (key) => key.includes('PASSWORD') || key.includes('SECRET'),
   ),
   messagesPerHour: 2,
@@ -23,7 +23,7 @@ export const loggingSettings: LoggingSettings = {
 
 export const cleanStringForLogging = (str: string): string => {
   loggingSettings.secretProps.forEach((secretProp) => {
-    str.replaceAll(process.env[secretProp], loggingSettings.redactionText);
+    str.replaceAll(process.env[secretProp] || '', loggingSettings.redactionText);
   });
   return str;
 };
@@ -61,10 +61,7 @@ export const shouldLogMessage = (message, group = 'default') => {
     loggingSettings.priorMessages[group] = [];
   }
   if (!loggingSettings.priorMessages[group][message]) {
-    loggingSettings.priorMessages[group][message] = {
-      date: new Date(),
-      count: 1,
-    };
+    loggingSettings.priorMessages[group][message] = { date: new Date(), count: 1 };
     return true;
   }
   // check if enough time has elapsed since counter began

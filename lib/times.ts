@@ -2,7 +2,7 @@
   Many of these functions require moment timezone injected
 */
 import { curry } from './functional';
-import { isString } from './types';
+import { isString } from './js-types';
 
 let moment;
 
@@ -47,8 +47,7 @@ export const dateFormatRegexes = {
   'YYYY-MM-DDTHH:mm:ssZ': /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/, // 2024-02-24T13:01:01Z
 };
 
-export const momentValidate = (date, finalFormat = '', original = '') => {
-  const prefix = '[momentValidate]';
+export const momentValidate = (date, finalFormat = '') => {
   let mom;
   if (!moment.isMoment(date)) {
     mom = moment(date, getTimeStringFormat(date));
@@ -61,7 +60,6 @@ export const momentValidate = (date, finalFormat = '', original = '') => {
     }
     return mom.format(finalFormat);
   }
-  console.log(prefix, 'ERROR: received invalid date:', date, ', original:', original);
   return '';
 };
 
@@ -80,7 +78,7 @@ export const getUTCDate = (original?, currentFormat = '', format = '') => {
   } else {
     d = moment.utc(original);
   }
-  return momentValidate(d, format, original);
+  return momentValidate(d, format);
 };
 
 export const getESTDate = (date, format = '') => {
@@ -114,30 +112,35 @@ export const timePastDateExcludeWeekend = (
   older: Date | string,
   newer: Date | string = new Date(),
 ) => {
-  const prefix = '[timePastDateExcludeWeekend]';
   const dayOfWeekNew = getUTCDate(newer).day();
   const dayOfWeekOld = getUTCDate(older).day();
+
   // ex. if old is Wednesday and new is Monday, add back that weekend
   if (dayOfWeekOld > dayOfWeekNew) {
     older = getUTCDate(older).add(48, 'hours');
   }
+
   const timePast = timePastDate(timeType, older, newer);
   const timePastDays = timeType === 'days' ? timePast : timePastDate('days', older, newer);
   const weekendDays = Math.floor(timePastDays / 7) * 2;
+
   if (weekendDays === 0) {
     return timePast;
   }
+
   if (timeType === 'days') {
     return timePast - weekendDays;
   }
+
   if (timeType === 'hours') {
     const weekendHours = weekendDays * 24;
     return timePast - weekendHours;
   }
+
   if (timeType === 'minutes') {
     const weekendMinutes = weekendDays * 24 * 60;
     return timePast - weekendMinutes;
   }
-  console.log(prefix, 'Unexpected timeType:', timeType);
+
   return timePast;
 };

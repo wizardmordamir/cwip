@@ -2,13 +2,13 @@
 // run with:
 // bun bunBuild.js
 
-import path from 'path';
-import fs from 'fs';
+// import path from 'path';
+// import fs from 'fs';
 
 // NodeJS Build
 // const NODE_FIX =
 //   'import { createRequire as createImportMetaRequire } from "module"; import.meta.require ||= (id) => createImportMetaRequire(import.meta.url)(id);\n';
-const BUILD_DIR = 'dist';
+// const BUILD_DIR = 'dist';
 
 const config = {
   entrypoints: ['./index.ts'],

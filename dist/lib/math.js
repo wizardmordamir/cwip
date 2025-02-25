@@ -2,7 +2,7 @@
 // NOTE not for use with big ints or very long decimals
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.convertScientificToDecimal = exports.countDecimals = exports.divide = exports.subtract = exports.add = exports.doMath = exports.multiply = exports.roundDown = exports.roundUp = exports.round = exports.setPrecision = void 0;
-const types_1 = require("./types");
+const js_types_1 = require("./js-types");
 const setPrecision = (precision, val) => +val.toFixed(precision);
 exports.setPrecision = setPrecision;
 const round = (decimals, val) => Number(Math.round(Number(val + 'e' + decimals)) + 'e-' + decimals);
@@ -124,7 +124,7 @@ exports.subtract = subtract;
 const divide = (v1, v2) => (0, exports.doMath)('divide', v1, v2);
 exports.divide = divide;
 const countDecimals = (val) => {
-    if (!(0, types_1.isString)(val) && Number(val) % 1 === 0) {
+    if (!(0, js_types_1.isString)(val) && Number(val) % 1 === 0) {
         return 0;
     }
     const strVal = val.toString();

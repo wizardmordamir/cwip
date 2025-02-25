@@ -1,5 +1,5 @@
 type Obj = Record<string, any>;
-type LoggingSettings = {
+export type LoggingSettings = {
     disableSameMessagesLimit: boolean;
     redactionText: string;
     secretProps: string[];

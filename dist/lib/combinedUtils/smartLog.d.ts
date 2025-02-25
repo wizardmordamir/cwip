@@ -1,15 +1,22 @@
-export namespace smartLogSettings {
-    let timer: number;
-    let groupInclusions: any[];
-}
-export function handleError(err: any, prefix?: string): any;
-export function smartLog({ type, group, vals, stackLimit, skipShouldLogMessageCheck, depth, timer, }: {
+export declare const smartLogSettings: {
+    timer: number;
+    groupInclusions: any[];
+};
+export declare const handleError: (err: any, prefix?: string) => any;
+export type SmartLogParamsType = {
     type?: string;
     group?: string;
     vals?: any[];
-    stackLimit?: number;
-    skipShouldLogMessageCheck?: boolean;
-    depth?: number;
+    skipShouldLogMessageCheck?: Boolean;
+    depth?: Number;
     timer?: number;
-}): void;
+};
+export declare const smartLog: ({ type, group, vals, skipShouldLogMessageCheck, depth, timer, }: SmartLogParamsType) => void;
+export declare const smartLogger: ({ group, vals, skipShouldLogMessageCheck, depth, timer, }: SmartLogParamsType) => {
+    error: (...args: any[]) => void;
+    trace: (...args: any[]) => void;
+    debug: (...args: any[]) => void;
+    info: (...args: any[]) => void;
+    warn: (...args: any[]) => void;
+};
 //# sourceMappingURL=smartLog.d.ts.map

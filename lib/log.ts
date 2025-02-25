@@ -1,4 +1,4 @@
-import { stringify } from './objects';
+import { stringify, withoutKeys } from './objects';
 
 export const validLogLevels = ['trace', 'debug', 'info', 'warn', 'error'];
 const traceIndex = validLogLevels.indexOf('trace');
@@ -7,14 +7,10 @@ const infoIndex = validLogLevels.indexOf('info');
 const warnIndex = validLogLevels.indexOf('warn');
 const errorIndex = validLogLevels.indexOf('error');
 
-type LoggerConfig = {
+export type LoggerConfig = {
   pino?: any;
   name?: string;
-  prettyPrint?: {
-    colorize?: boolean;
-    translateTime?: string;
-    ignore?: string;
-  };
+  prettyPrint?: { colorize?: boolean; translateTime?: string; ignore?: string };
   hideFile?: boolean;
   hideTime?: boolean;
   hideLine?: boolean;
@@ -40,10 +36,13 @@ let currentConfig: LoggerConfig = {
   level: 'info',
 };
 
-export const logSettings = {
-  logger: null,
-  currentConfig,
+export type LogSettingsType = {
+  logger: any;
+  currentConfig: LoggerConfig;
+  depth: Function | undefined;
 };
+
+export const logSettings: LogSettingsType = { logger: null, currentConfig, depth: console.log };
 
 let loggerUpdater;
 
@@ -62,10 +61,8 @@ const getFileDetails = (index = logSettings.currentConfig.stackIndex) => {
 
   const file = logSettings.currentConfig.hideFile
     ? ''
-    : getFileFromStack(stack, logSettings.currentConfig.stackIndex).slice(process.cwd().length);
-  const line = logSettings.currentConfig.hideLine
-    ? ''
-    : getLineFromStack(stack, logSettings.currentConfig.stackIndex);
+    : getFileFromStack(stack, index).slice(process.cwd().length);
+  const line = logSettings.currentConfig.hideLine ? '' : getLineFromStack(stack, index);
   if (file) {
     if (logSettings.currentConfig.hideLine) {
       return file;
@@ -103,7 +100,7 @@ const defaultLog = (...args) => {
   console.log(s.trim());
 };
 
-const defaultLogger = function (config) {
+const defaultLogger = function () {
   return {
     trace: (...args) => {
       if (validLogLevels.indexOf(logSettings.currentConfig.level) >= traceIndex) {
@@ -141,17 +138,15 @@ export const createLogger = (config: LoggerConfig = {}) => {
   logSettings.logger = loggerUpdater(config);
 
   logSettings.logger.update = (config: LoggerConfig) => {
-    const { pino, ...restConfig } = config;
+    const restConfig = withoutKeys(config, ['pino']);
     logSettings.logger = loggerUpdater(restConfig);
   };
 
   if (!pino) {
-    return {
-      ...logSettings.logger,
-    };
+    return { ...logSettings.logger };
   }
 
-  return {
+  const fns: Record<string, Function> = {
     trace: (...args) => logSettings.logger.trace(getFileDetails(), ...args),
     debug: (...args) => logSettings.logger.debug(getFileDetails(), ...args),
     info: (...args) => logSettings.logger.info(getFileDetails(), ...args),
@@ -159,4 +154,15 @@ export const createLogger = (config: LoggerConfig = {}) => {
     error: (...args) => logSettings.logger.error(getFileDetails(), ...args),
     update: logSettings.logger.update,
   };
+
+  fns.depth = (depth, type, ...args) =>
+    logSettings.logger[type](
+      getFileDetails(depth || logSettings.currentConfig.stackIndex + 1),
+      ...args,
+    );
+
+  logSettings.logger.depth = fns.depth;
+  logSettings.depth = fns.depth;
+
+  return fns;
 };

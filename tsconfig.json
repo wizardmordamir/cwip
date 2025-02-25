@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2015",
+    "target": "es2021",
     "baseUrl": "./",
     "outDir": "dist",
     "moduleResolution": "node",
@@ -11,6 +11,13 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true
   },
-  "include": ["*/**.ts", "index.ts", "server/envConfig.js", "server/app.js"],
+  "include": [
+    "*/**.ts",
+    "index.ts",
+    "server/envConfig.js",
+    "server/app.js",
+    "lib/arrays/arrays.ts",
+    "lib/objects"
+  ],
   "exclude": ["**/ui", "**/node_modules", "**/build", "**/dist"]
 }

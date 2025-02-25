@@ -1,15 +1,4 @@
 "use strict";
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createLogger = exports.getLineFromStack = exports.getFileFromStack = exports.logSettings = exports.validLogLevels = void 0;
 const objects_1 = require("./objects");
@@ -37,6 +26,7 @@ let currentConfig = {
 exports.logSettings = {
     logger: null,
     currentConfig,
+    depth: console.log,
 };
 let loggerUpdater;
 const getFileFromStack = (stack, index) => stack[index].getFileName();
@@ -54,10 +44,8 @@ const getFileDetails = (index = exports.logSettings.currentConfig.stackIndex) =>
     Error.prepareStackTrace = orig;
     const file = exports.logSettings.currentConfig.hideFile
         ? ''
-        : (0, exports.getFileFromStack)(stack, exports.logSettings.currentConfig.stackIndex).slice(process.cwd().length);
-    const line = exports.logSettings.currentConfig.hideLine
-        ? ''
-        : (0, exports.getLineFromStack)(stack, exports.logSettings.currentConfig.stackIndex);
+        : (0, exports.getFileFromStack)(stack, index).slice(process.cwd().length);
+    const line = exports.logSettings.currentConfig.hideLine ? '' : (0, exports.getLineFromStack)(stack, index);
     if (file) {
         if (exports.logSettings.currentConfig.hideLine) {
             return file;
@@ -95,7 +83,7 @@ const defaultLog = (...args) => {
     });
     console.log(s.trim());
 };
-const defaultLogger = function (config) {
+const defaultLogger = function () {
     return {
         trace: (...args) => {
             if (exports.validLogLevels.indexOf(exports.logSettings.currentConfig.level) >= traceIndex) {
@@ -125,18 +113,20 @@ const defaultLogger = function (config) {
     };
 };
 const createLogger = (config = {}) => {
-    const { pino } = config, restConfig = __rest(config, ["pino"]);
+    const { pino, ...restConfig } = config;
     exports.logSettings.currentConfig = Object.assign({}, exports.logSettings.currentConfig, restConfig);
-    loggerUpdater = pino !== null && pino !== void 0 ? pino : defaultLogger;
+    loggerUpdater = pino ?? defaultLogger;
     exports.logSettings.logger = loggerUpdater(config);
     exports.logSettings.logger.update = (config) => {
-        const { pino } = config, restConfig = __rest(config, ["pino"]);
+        const restConfig = (0, objects_1.withoutKeys)(config, ['pino']);
         exports.logSettings.logger = loggerUpdater(restConfig);
     };
     if (!pino) {
-        return Object.assign({}, exports.logSettings.logger);
+        return {
+            ...exports.logSettings.logger,
+        };
     }
-    return {
+    const fns = {
         trace: (...args) => exports.logSettings.logger.trace(getFileDetails(), ...args),
         debug: (...args) => exports.logSettings.logger.debug(getFileDetails(), ...args),
         info: (...args) => exports.logSettings.logger.info(getFileDetails(), ...args),
@@ -144,5 +134,9 @@ const createLogger = (config = {}) => {
         error: (...args) => exports.logSettings.logger.error(getFileDetails(), ...args),
         update: exports.logSettings.logger.update,
     };
+    fns.depth = (depth, type, ...args) => exports.logSettings.logger[type](getFileDetails(depth || exports.logSettings.currentConfig.stackIndex + 1), ...args);
+    exports.logSettings.logger.depth = fns.depth;
+    exports.logSettings.depth = fns.depth;
+    return fns;
 };
 exports.createLogger = createLogger;

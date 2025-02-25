@@ -1,4 +1,4 @@
-import { ConvertType } from './conversions';
+import { ConvertType } from './byteConversions';
 export declare const loadAvg: (precision?: number) => number[];
 export declare const getLoadPastMinute: (precision?: number) => number;
 export declare const freeMemory: (convertType?: ConvertType) => number;

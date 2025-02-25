@@ -1,6 +1,6 @@
 // NOTE not for use with big ints or very long decimals
 
-import { isString } from './types';
+import { isString } from './js-types';
 
 export const setPrecision = (precision: number, val: number): number => +val.toFixed(precision);
 
@@ -99,9 +99,13 @@ export const multiply = (v1: number, v2: number): number => {
   return signMult * Number(floatAnswer.join(''));
 };
 
-type Operations = 'add' | 'subtract' | 'divide';
+export type BasicMathOperations = 'add' | 'subtract' | 'divide';
 
-export const doMath = (type: Operations, v1: number | string, v2: number | string) => {
+export const doMath = (
+  type: BasicMathOperations,
+  v1: number | string,
+  v2: number | string,
+): number => {
   // check for scientific notation, convert to decimal
   if (v1.toString().includes('e-')) {
     v1 = convertScientificToDecimal(v1);

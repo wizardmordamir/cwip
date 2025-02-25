@@ -1,5 +1,5 @@
 export declare const validLogLevels: string[];
-type LoggerConfig = {
+export type LoggerConfig = {
     pino?: any;
     name?: string;
     prettyPrint?: {
@@ -15,12 +15,13 @@ type LoggerConfig = {
     stackIndex?: number;
     level?: 'trace' | 'debug' | 'info' | 'warn' | 'error';
 };
-export declare const logSettings: {
+export type LogSettingsType = {
     logger: any;
     currentConfig: LoggerConfig;
+    depth: Function | undefined;
 };
+export declare const logSettings: LogSettingsType;
 export declare const getFileFromStack: (stack: any, index: any) => any;
 export declare const getLineFromStack: (stack: any, index: any) => any;
 export declare const createLogger: (config?: LoggerConfig) => any;
-export {};
 //# sourceMappingURL=log.d.ts.map

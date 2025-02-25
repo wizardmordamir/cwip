@@ -1,4 +1,4 @@
-import { ConvertType, convertBytesTo } from './conversions';
+import { ConvertType, convertBytesTo } from './byteConversions';
 import { setPrecision } from './math';
 import os from 'os';
 

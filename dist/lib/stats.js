@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.totalMemory = exports.freeMemory = exports.getLoadPastMinute = exports.loadAvg = void 0;
-const conversions_1 = require("./conversions");
+const byteConversions_1 = require("./byteConversions");
 const math_1 = require("./math");
 const os_1 = __importDefault(require("os"));
 const defaultPrecision = 8;
@@ -21,11 +21,11 @@ const getLoadPastMinute = function (precision = defaultPrecision) {
 exports.getLoadPastMinute = getLoadPastMinute;
 // get free memory in bytes or converted, ex. 2737586176
 const freeMemory = function (convertType = 'bytes') {
-    return (0, conversions_1.convertBytesTo)(os_1.default.freemem(), convertType);
+    return (0, byteConversions_1.convertBytesTo)(os_1.default.freemem(), convertType);
 };
 exports.freeMemory = freeMemory;
 // get total memory in bytes or converted
 const totalMemory = function (convertTo = 'bytes') {
-    return (0, conversions_1.convertBytesTo)(os_1.default.totalmem(), convertTo);
+    return (0, byteConversions_1.convertBytesTo)(os_1.default.totalmem(), convertTo);
 };
 exports.totalMemory = totalMemory;

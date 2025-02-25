@@ -15,22 +15,23 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const times = __importStar(require("./times"));
 const logging = __importStar(require("./logging"));
@@ -41,25 +42,25 @@ describe('logging', () => {
             loggingSettings.disableSameMessagesLimit = false;
             loggingSettings.priorMessages = {};
         });
-        it('should return true for misssing message', () => __awaiter(void 0, void 0, void 0, function* () {
+        it('should return true for misssing message', async () => {
             expect(shouldLogMessage('')).toBe(true);
-        }));
-        it('should return true when appconfig is not limiting messages', () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it('should return true when appconfig is not limiting messages', async () => {
             loggingSettings.disableSameMessagesLimit = true;
             expect(shouldLogMessage('hi')).toBe(true);
-        }));
-        it.only('should return true when called consecutively', () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it.only('should return true when called consecutively', async () => {
             loggingSettings.disableSameMessagesLimit = false;
             shouldLogMessage('hi');
             expect(shouldLogMessage('hi')).toBe(true);
-        }));
-        it('should return true if enough time elapsed since last message counter began', () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it('should return true if enough time elapsed since last message counter began', async () => {
             loggingSettings.disableSameMessagesLimit = false;
             const logSpy = jest.spyOn(times, 'hoursPastDate');
             logSpy.mockReturnValueOnce(3);
             shouldLogMessage(2, 'default');
             expect(shouldLogMessage(2, 'default')).toBe(true);
-        }));
+        });
         it('should return true when count is too low', () => {
             const message = 'test message';
             loggingSettings.priorMessages.default = {};

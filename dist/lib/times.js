@@ -5,12 +5,11 @@ exports.timePastDateExcludeWeekend = exports.hoursPastDate = exports.daysPastDat
   Many of these functions require moment timezone injected
 */
 const functional_1 = require("./functional");
-const types_1 = require("./types");
+const js_types_1 = require("./js-types");
 let moment;
 const addMomentTimeZone = (momentTimezone, defaultTZ = 'Etc/UTC') => {
-    var _a;
     moment = momentTimezone;
-    (_a = moment.tz) === null || _a === void 0 ? void 0 : _a.setDefault(defaultTZ);
+    moment.tz?.setDefault(defaultTZ);
 };
 exports.addMomentTimeZone = addMomentTimeZone;
 exports.dbTimeFormat = 'YYYY-MM-DD HH:mm:ss'; // use for db dates
@@ -45,8 +44,7 @@ exports.dateFormatRegexes = {
     'MMMM D, YYYY': /^[a-zA-Z]{6,} \d{1,2}, \d{4}$/, // December 5, 2023
     'YYYY-MM-DDTHH:mm:ssZ': /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/, // 2024-02-24T13:01:01Z
 };
-const momentValidate = (date, finalFormat = '', original = '') => {
-    const prefix = '[momentValidate]';
+const momentValidate = (date, finalFormat = '') => {
     let mom;
     if (!moment.isMoment(date)) {
         mom = moment(date, (0, exports.getTimeStringFormat)(date));
@@ -60,12 +58,11 @@ const momentValidate = (date, finalFormat = '', original = '') => {
         }
         return mom.format(finalFormat);
     }
-    console.log(prefix, 'ERROR: received invalid date:', date, ', original:', original);
     return '';
 };
 exports.momentValidate = momentValidate;
 const getTimeStringFormat = (dateString) => {
-    if (!(0, types_1.isString)(dateString)) {
+    if (!(0, js_types_1.isString)(dateString)) {
         return;
     }
     dateString = dateString.trim();
@@ -74,13 +71,13 @@ const getTimeStringFormat = (dateString) => {
 exports.getTimeStringFormat = getTimeStringFormat;
 const getUTCDate = (original, currentFormat = '', format = '') => {
     let d;
-    if ((0, types_1.isString)(original)) {
+    if ((0, js_types_1.isString)(original)) {
         d = moment.utc(original, currentFormat || (0, exports.getTimeStringFormat)(original));
     }
     else {
         d = moment.utc(original);
     }
-    return (0, exports.momentValidate)(d, format, original);
+    return (0, exports.momentValidate)(d, format);
 };
 exports.getUTCDate = getUTCDate;
 const getESTDate = (date, format = '') => {
@@ -107,7 +104,6 @@ const hoursPastDate = (date, oldDate = new Date()) => {
 };
 exports.hoursPastDate = hoursPastDate;
 const timePastDateExcludeWeekend = (timeType, older, newer = new Date()) => {
-    const prefix = '[timePastDateExcludeWeekend]';
     const dayOfWeekNew = (0, exports.getUTCDate)(newer).day();
     const dayOfWeekOld = (0, exports.getUTCDate)(older).day();
     // ex. if old is Wednesday and new is Monday, add back that weekend
@@ -131,7 +127,6 @@ const timePastDateExcludeWeekend = (timeType, older, newer = new Date()) => {
         const weekendMinutes = weekendDays * 24 * 60;
         return timePast - weekendMinutes;
     }
-    console.log(prefix, 'Unexpected timeType:', timeType);
     return timePast;
 };
 exports.timePastDateExcludeWeekend = timePastDateExcludeWeekend;

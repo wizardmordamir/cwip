@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.smartLog = exports.handleError = exports.smartLogSettings = void 0;
+exports.smartLogger = exports.smartLog = exports.handleError = exports.smartLogSettings = void 0;
 const log_1 = require("../log");
 const __1 = require("..");
 exports.smartLogSettings = {
-    timer: 300000,
+    timer: 300_000,
     groupInclusions: [], // add strings from logs to use to group
 };
 const handleError = (err, prefix = '') => {
@@ -28,12 +28,12 @@ const startBlockLoggingTimer = (key, timer = exports.smartLogSettings.timer) => 
         unblockLogging(key);
     }, timer);
 };
-// use log when you want to avoid logging the same message repeatedly
+// use when you want to avoid logging the same message repeatedly
 // identical messages cannot occur within a time limit in ms
 // identical messages are further limited by shouldLogMessage checks
 // errors can be added at the end of vals to automatically get their appropriate messages
 // ex. log('error', 'connectionError', [prefix, err]);
-const smartLog = ({ type = 'error', group = '', vals = [], stackLimit = 5, skipShouldLogMessageCheck = false, depth = 3, timer = exports.smartLogSettings.timer, }) => {
+const smartLog = ({ type = 'error', group = '', vals = [], skipShouldLogMessageCheck = false, depth, timer = exports.smartLogSettings.timer, }) => {
     try {
         const joinedVals = vals.join(',');
         if (!group) {
@@ -51,26 +51,60 @@ const smartLog = ({ type = 'error', group = '', vals = [], stackLimit = 5, skipS
             if (skipShouldLogMessageCheck || (0, __1.shouldLogMessage)(joinedVals)) {
                 let updatedLogVals;
                 if (type === 'error' && vals[vals.length - 1] instanceof Error) {
-                    updatedLogVals = [...vals.slice(0, -1), (0, __1.getMessageFromError)(vals[-1], '', stackLimit)];
+                    updatedLogVals = [...vals.slice(0, -1), (0, __1.getMessageFromError)(vals[-1], '')];
                 }
                 if (group) {
-                    log_1.logSettings.logger[type](group, ...(updatedLogVals || vals));
+                    log_1.logSettings.depth(depth, type, group, ...(updatedLogVals || vals));
                 }
                 else {
-                    log_1.logSettings.logger[type](...(updatedLogVals || vals));
+                    log_1.logSettings.depth(depth, type, ...(updatedLogVals || vals));
                 }
             }
         }
     }
     catch (err) {
-        log_1.logSettings.logger.error({
-            type,
-            group,
-            vals,
-            stackLimit,
-            skipShouldLogMessageCheck,
-            depth,
-        }, (0, __1.getMessageFromError)(err));
+        console.log('smartLog err:', err);
     }
 };
 exports.smartLog = smartLog;
+// set up a logger to use smartLog with optional defaults for these params
+// group, vals, skipShouldLogMessageCheck, depth, timer
+// It can be called like this:
+// smartLogger(defaults).error('error:', error))
+const smartLogger = ({ group, vals, skipShouldLogMessageCheck, depth, timer, }) => {
+    // these are the same for each log type
+    const defaultSmartLogParams = {
+        group,
+        skipShouldLogMessageCheck,
+        depth,
+        timer,
+    };
+    return {
+        error: (...args) => (0, exports.smartLog)({
+            ...defaultSmartLogParams,
+            type: 'error',
+            vals: [...vals, ...args],
+        }),
+        trace: (...args) => (0, exports.smartLog)({
+            ...defaultSmartLogParams,
+            type: 'trace',
+            vals: [...vals, ...args],
+        }),
+        debug: (...args) => (0, exports.smartLog)({
+            ...defaultSmartLogParams,
+            type: 'debug',
+            vals: [...vals, ...args],
+        }),
+        info: (...args) => (0, exports.smartLog)({
+            ...defaultSmartLogParams,
+            type: 'info',
+            vals: [...vals, ...args],
+        }),
+        warn: (...args) => (0, exports.smartLog)({
+            ...defaultSmartLogParams,
+            type: 'warn',
+            vals: [...vals, ...args],
+        }),
+    };
+};
+exports.smartLogger = smartLogger;

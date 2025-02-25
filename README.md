@@ -1,7 +1,7 @@
 Cwip
 =========
 
-Library of useful javascript utility methods with no additional dependencies. 
+Library of javascript utility methods with no additional dependencies. 
 
 ## Installation
 

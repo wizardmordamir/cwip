@@ -28,7 +28,7 @@ export declare const dateFormatRegexes: {
     'MMMM D, YYYY': RegExp;
     'YYYY-MM-DDTHH:mm:ssZ': RegExp;
 };
-export declare const momentValidate: (date: any, finalFormat?: string, original?: string) => any;
+export declare const momentValidate: (date: any, finalFormat?: string) => any;
 export declare const getTimeStringFormat: (dateString: any) => string;
 export declare const getUTCDate: (original?: any, currentFormat?: string, format?: string) => any;
 export declare const getESTDate: (date: any, format?: string) => any;

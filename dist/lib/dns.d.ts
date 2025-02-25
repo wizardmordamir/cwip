@@ -1,8 +1,7 @@
-export declare const dnsSettings: {
-    isConnected: boolean;
+export declare const defaultSettings: {
     testSites: string[];
     timeout: number;
     tries: number;
 };
-export declare const checkConnection: () => Promise<void>;
+export declare const checkConnection: (settings: any) => Promise<boolean>;
 //# sourceMappingURL=dns.d.ts.map
