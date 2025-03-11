@@ -89,7 +89,7 @@ export const smartLog = ({
 // smartLogger(defaults).error('error:', error))
 export const smartLogger = ({
   group,
-  vals,
+  vals = [],
   skipShouldLogMessageCheck,
   depth,
   timer,

@@ -71,7 +71,7 @@ exports.smartLog = smartLog;
 // group, vals, skipShouldLogMessageCheck, depth, timer
 // It can be called like this:
 // smartLogger(defaults).error('error:', error))
-const smartLogger = ({ group, vals, skipShouldLogMessageCheck, depth, timer, }) => {
+const smartLogger = ({ group, vals = [], skipShouldLogMessageCheck, depth, timer, }) => {
     // these are the same for each log type
     const defaultSmartLogParams = { group, skipShouldLogMessageCheck, depth, timer };
     return {
