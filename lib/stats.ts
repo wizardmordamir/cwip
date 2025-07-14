@@ -6,7 +6,10 @@ const isNode =
 
 let os: typeof import('os') | undefined;
 if (isNode) {
-  os = require('os');
+  const loadOs = async () => {
+    os = await import('os');
+  };
+  loadOs();
 }
 
 const defaultPrecision = 8;
