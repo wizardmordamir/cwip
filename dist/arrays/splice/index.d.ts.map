@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../lib/arrays/splice/index.ts"],"names":[],"mappings":"AAAA,eAAO,MAAM,MAAM,GAAI,CAAC,OAAO,CAAC,EAAE,SAAS,MAAM,gBAAe,MAAM,YAAgB,CAAC,EAAE,KAAG,CAAC,EAG5F,CAAC"}
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../lib/arrays/splice/index.ts"],"names":[],"mappings":"AAAA,eAAO,MAAM,MAAM,GAAI,CAAC,EAAE,KAAK,CAAC,EAAE,EAAE,OAAO,MAAM,EAAE,cAAa,MAAU,EAAE,GAAG,OAAO,CAAC,EAAE,KAAG,CAAC,EAG5F,CAAC"}

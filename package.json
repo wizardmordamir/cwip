@@ -1,6 +1,6 @@
 {
   "name": "cwip",
-  "version": "1.0.21",
+  "version": "1.1.1",
   "description": "Utility functions for node js",
   "main": "dist/index.js",
   "type": "commonjs",
@@ -8,11 +8,11 @@
   "scripts": {
     "build:types": "tsc -d --declarationDir dist --declarationMap --emitDeclarationOnly",
     "build:tsc": "tsc -d --declarationDir dist --declarationMap",
-    "lint": "eslint . --ext .js,.ts --ignore-path .eslintignore",
+    "lint": "eslint . --ext .js,.ts --ignore-path .eslintignore --fix",
     "format": "npx prettier --write . | grep -v '(unchanged)'",
     "bun:test": "bun test --coverage",
     "test": "jest --coverage",
-    "update:dev": "npm update --dev"
+    "update:dev": "npm update --include=dev"
   },
   "repository": {
     "type": "git",
@@ -34,6 +34,7 @@
     "@babel/preset-typescript": "^7.23.3",
     "@jest/globals": "^29.7.0",
     "@types/jest": "^29.5.11",
+    "@types/node": "^24.0.12",
     "@typescript-eslint/parser": "^6.17.0",
     "babel-jest": "^29.7.0",
     "bun": "^1.2.3",
