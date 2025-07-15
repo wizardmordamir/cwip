@@ -1,41 +1,48 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.shouldLogMessage = exports.cleanDataForLogging = exports.cleanStringForLogging = exports.loggingSettings = void 0;
+exports.shouldLogMessage = exports.cleanDataForLogging = exports.cleanStringForLogging = exports.updateLoggingSettings = exports.loggingSettings = void 0;
 const times_1 = require("./times");
 const js_types_1 = require("./js-types");
 exports.loggingSettings = {
     disableSameMessagesLimit: false,
     redactionText: 'HIDDEN',
-    secretProps: Object.keys(process.env || {}).filter((key) => key.includes('PASSWORD') || key.includes('SECRET')),
+    secretProps: [],
     messagesPerHour: 2,
     priorMessages: {},
 };
-const cleanStringForLogging = (str) => {
+const updateLoggingSettings = (settings) => {
+    for (const key in settings) {
+        exports.loggingSettings[key] = settings[key];
+    }
+};
+exports.updateLoggingSettings = updateLoggingSettings;
+const cleanStringForLogging = (str, env) => {
     exports.loggingSettings.secretProps.forEach((secretProp) => {
-        str.replaceAll(process.env[secretProp] || '', exports.loggingSettings.redactionText);
+        if (env[secretProp]) {
+            str.replaceAll(env[secretProp], exports.loggingSettings.redactionText);
+        }
     });
     return str;
 };
 exports.cleanStringForLogging = cleanStringForLogging;
-const cleanDataForLogging = (opts) => {
-    var _a, _b;
+const cleanDataForLogging = (opts, env) => {
     if (!opts) {
         return opts;
     }
     if ((0, js_types_1.isString)(opts)) {
-        return (0, exports.cleanStringForLogging)(opts);
+        return (0, exports.cleanStringForLogging)(opts, env);
     }
     const optsClone = JSON.parse(JSON.stringify(opts));
     if (optsClone.auth) {
         optsClone.auth = exports.loggingSettings.redactionText;
     }
-    if ((_a = optsClone.headers) === null || _a === void 0 ? void 0 : _a.authorization) {
+    if (optsClone.headers?.authorization) {
         optsClone.headers.authorization = exports.loggingSettings.redactionText;
     }
-    if ((_b = optsClone.response) === null || _b === void 0 ? void 0 : _b.config) {
+    if (optsClone.response?.config) {
         delete optsClone.response.config;
     }
-    const cleanStringJSON = (0, exports.cleanDataForLogging)(JSON.stringify(optsClone));
+    const cleanStringJSON = (0, exports.cleanDataForLogging)(JSON.stringify(optsClone), env);
     return JSON.parse(cleanStringJSON);
 };
 exports.cleanDataForLogging = cleanDataForLogging;

@@ -14,26 +14,32 @@ export type LoggingSettings = {
 export const loggingSettings: LoggingSettings = {
   disableSameMessagesLimit: false,
   redactionText: 'HIDDEN',
-  secretProps: Object.keys(process.env || {}).filter(
-    (key) => key.includes('PASSWORD') || key.includes('SECRET'),
-  ),
+  secretProps: [],
   messagesPerHour: 2,
   priorMessages: {},
 };
 
-export const cleanStringForLogging = (str: string): string => {
+export const updateLoggingSettings = (settings: Partial<LoggingSettings>) => {
+  for (const key in settings) {
+    loggingSettings[key] = settings[key];
+  }
+};
+
+export const cleanStringForLogging = (str: string, env: Obj): string => {
   loggingSettings.secretProps.forEach((secretProp) => {
-    str.replaceAll(process.env[secretProp] || '', loggingSettings.redactionText);
+    if (env[secretProp]) {
+      str.replaceAll(env[secretProp], loggingSettings.redactionText);
+    }
   });
   return str;
 };
 
-export const cleanDataForLogging = (opts) => {
+export const cleanDataForLogging = (opts, env: Obj) => {
   if (!opts) {
     return opts;
   }
   if (isString(opts)) {
-    return cleanStringForLogging(opts);
+    return cleanStringForLogging(opts, env);
   }
   const optsClone = JSON.parse(JSON.stringify(opts));
   if (optsClone.auth) {
@@ -45,7 +51,7 @@ export const cleanDataForLogging = (opts) => {
   if (optsClone.response?.config) {
     delete optsClone.response.config;
   }
-  const cleanStringJSON = cleanDataForLogging(JSON.stringify(optsClone));
+  const cleanStringJSON = cleanDataForLogging(JSON.stringify(optsClone), env);
   return JSON.parse(cleanStringJSON);
 };
 

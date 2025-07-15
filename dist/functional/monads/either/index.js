@@ -7,6 +7,7 @@ exports.Either = exports.EitherRight = exports.EitherLeft = void 0;
 const curry_1 = require("../../util-functions/curry");
 const short_circuit_1 = __importDefault(require("../short-circuit"));
 class EitherLeft {
+    value;
     constructor(value) {
         this.value = value;
     }
@@ -25,6 +26,7 @@ class EitherLeft {
 }
 exports.EitherLeft = EitherLeft;
 class EitherRight {
+    value;
     constructor(value) {
         this.value = value;
     }

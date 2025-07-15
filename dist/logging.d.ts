@@ -7,8 +7,9 @@ export type LoggingSettings = {
     priorMessages: Obj;
 };
 export declare const loggingSettings: LoggingSettings;
-export declare const cleanStringForLogging: (str: string) => string;
-export declare const cleanDataForLogging: (opts: any) => any;
+export declare const updateLoggingSettings: (settings: Partial<LoggingSettings>) => void;
+export declare const cleanStringForLogging: (str: string, env: Obj) => string;
+export declare const cleanDataForLogging: (opts: any, env: Obj) => any;
 export declare const shouldLogMessage: (message: any, group?: string) => boolean;
 export {};
 //# sourceMappingURL=logging.d.ts.map

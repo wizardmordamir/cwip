@@ -1,3 +1,3 @@
 export declare const dbConnectionErrors: string[];
-export declare const getMessageFromError: (error: any, prefix?: string) => any;
+export declare const getMessageFromError: (error: any) => any;
 //# sourceMappingURL=index.d.ts.map

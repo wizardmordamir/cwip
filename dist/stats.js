@@ -40,7 +40,8 @@ const isNode = typeof process !== 'undefined' && process.versions != null && pro
 let os;
 if (isNode) {
     const loadOs = async () => {
-        os = await Promise.resolve().then(() => __importStar(require('os')));
+        const osModule = await Promise.resolve().then(() => __importStar(require('os')));
+        os = osModule.default;
     };
     loadOs();
 }

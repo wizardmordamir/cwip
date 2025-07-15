@@ -1,7 +1,7 @@
 export type LoggerLevel = 'info' | 'debug' | 'trace' | 'warn' | 'error';
 
 export type LoggerConfig = {
-  baseDirectory: string | undefined;
+  baseDirectory?: string;
   level: LoggerLevel;
   stackDepth: number;
   timestampFunction?: () => string;
@@ -9,15 +9,9 @@ export type LoggerConfig = {
 
 const validLevels: LoggerLevel[] = ['trace', 'debug', 'info', 'warn', 'error'];
 
-const envLoggerLevel = process.env.LOGGER_LEVEL as LoggerLevel;
-const baseLoggerLevel = validLevels.includes(envLoggerLevel)
-  ? envLoggerLevel
-  : ('info' as LoggerLevel);
-
 const loggerConfig: LoggerConfig = {
-  baseDirectory: process.env.LOGGER_BASE_DIRECTORY,
-  level: baseLoggerLevel,
-  stackDepth: process.env.LOGGER_STACK_DEPTH ? Number(process.env.LOGGER_STACK_DEPTH) : 2, // stack order: [0: getFileDetails, 1: log, 2: logger, 3: callee]
+  level: 'info' as LoggerLevel,
+  stackDepth: 2, // stack order: [0: getFileDetails, 1: log, 2: logger, 3: callee]
 };
 
 export const updateLoggerConfig = (config: Partial<LoggerConfig>) =>

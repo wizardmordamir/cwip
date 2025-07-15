@@ -2,20 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.logger = exports.getFileDetails = exports.updateLoggerConfig = void 0;
 const validLevels = ['trace', 'debug', 'info', 'warn', 'error'];
-const envLoggerLevel = process.env.LOGGER_LEVEL;
-const baseLoggerLevel = validLevels.includes(envLoggerLevel)
-    ? envLoggerLevel
-    : 'info';
 const loggerConfig = {
-    baseDirectory: process.env.LOGGER_BASE_DIRECTORY,
-    level: baseLoggerLevel,
-    stackDepth: process.env.LOGGER_STACK_DEPTH ? Number(process.env.LOGGER_STACK_DEPTH) : 2, // stack order: [0: getFileDetails, 1: log, 2: logger, 3: callee]
+    level: 'info',
+    stackDepth: 2, // stack order: [0: getFileDetails, 1: log, 2: logger, 3: callee]
 };
 const updateLoggerConfig = (config) => Object.assign(loggerConfig, config);
 exports.updateLoggerConfig = updateLoggerConfig;
 const getFileDetails = (stackDepth) => {
-    var _a;
-    const stackTraceArray = ((_a = new Error().stack) === null || _a === void 0 ? void 0 : _a.split('\n').slice(1)) || [];
+    const stackTraceArray = new Error().stack?.split('\n').slice(1) || [];
     const stackSection = stackTraceArray[Math.min(stackDepth || loggerConfig.stackDepth, stackTraceArray.length - 1)] ||
         '';
     const stackMatch = stackSection.match(/at (.+)\)/);

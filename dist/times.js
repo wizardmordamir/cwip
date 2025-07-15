@@ -8,9 +8,8 @@ const functional_1 = require("./functional");
 const js_types_1 = require("./js-types");
 let moment;
 const addMomentTimeZone = (momentTimezone, defaultTZ = 'Etc/UTC') => {
-    var _a;
     moment = momentTimezone;
-    (_a = moment.tz) === null || _a === void 0 ? void 0 : _a.setDefault(defaultTZ);
+    moment.tz?.setDefault(defaultTZ);
 };
 exports.addMomentTimeZone = addMomentTimeZone;
 exports.dbTimeFormat = 'YYYY-MM-DD HH:mm:ss'; // use for db dates

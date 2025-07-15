@@ -1,6 +1,6 @@
 export type LoggerLevel = 'info' | 'debug' | 'trace' | 'warn' | 'error';
 export type LoggerConfig = {
-    baseDirectory: string | undefined;
+    baseDirectory?: string;
     level: LoggerLevel;
     stackDepth: number;
     timestampFunction?: () => string;

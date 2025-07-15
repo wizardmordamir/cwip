@@ -11,9 +11,8 @@ const escapeForRegex = (str) => {
 };
 
 const loggerConfig: LoggerConfig = {
-  baseDirectory: process.env.LOGGER_BASE_DIRECTORY,
   level: 'info',
-  stackDepth: process.env.LOGGER_STACK_DEPTH ? Number(process.env.LOGGER_STACK_DEPTH) : 2, // stack order: [0: getFileDetails, 1: log, 2: logger, 3: callee]
+  stackDepth: 2, // stack order: [0: getFileDetails, 1: log, 2: logger, 3: callee]
 };
 
 describe('logger', () => {

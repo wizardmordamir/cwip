@@ -1,13 +1,7 @@
 import { jest } from '@jest/globals';
 import { shouldLogMessage } from '../../logging';
 
-import {
-  removeModulesFromStack,
-  showStackForError,
-  isAxiosError,
-  isNetworkError,
-  getMessageFromError,
-} from '.';
+import { removeModulesFromStack, showStackForError, isNetworkError, getMessageFromError } from '.';
 
 jest.mock('../../logging', () => ({
   ...(jest.requireActual('../../logging') as object),
@@ -37,15 +31,6 @@ describe('errors', () => {
     });
   });
 
-  describe('isAxiosError', () => {
-    it('should return true if error response returned', async () => {
-      expect(isAxiosError({ response: 'ETIMEOUT' })).toBe(true);
-    });
-    it('should return false if error response not returned', async () => {
-      expect(isAxiosError({})).toBe(false);
-    });
-  });
-
   describe('showStackForError', () => {
     it('should return false with error and no error stack', async () => {
       const err = makeError();
@@ -55,11 +40,6 @@ describe('errors', () => {
 
     it('should return false for error and error code in skipStackErrorCodes', async () => {
       expect(showStackForError({ ...makeError(), code: 'EREQUEST' })).toBe(false);
-    });
-
-    it('should return false for axios error', async () => {
-      const err = makeError();
-      expect(showStackForError({ ...err, response: 'ETIMEOUT' })).toBe(false);
     });
   });
 
@@ -83,22 +63,6 @@ describe('errors', () => {
   describe('getMessageFromError Success', () => {
     it('should handle no params', () => {
       expect(getMessageFromError('')).toEqual('');
-    });
-
-    it('should handle failing parsing axios response', () => {
-      const err: any = new Error('test error');
-      err.response = { data: { vals: '' } };
-      err.response.data.vals = err.response; // make a circular reference
-      const errMsg = getMessageFromError(err);
-      expect(typeof errMsg).toBe('string');
-      expect(errMsg.includes('stringified')).toEqual(false);
-    });
-
-    it('should handle failing parsing axios response without data', () => {
-      const err: any = new Error('test error');
-      err.response = {};
-      const errMsg = getMessageFromError(err);
-      expect(errMsg.includes('stringified')).toEqual(false);
     });
   });
 });

@@ -48,16 +48,17 @@ describe('logging', () => {
   describe('cleanDataForLogging', () => {
     it('should clean data for logging', () => {
       const hidden = 'HIDDEN';
-      const password = process.env.TEST_PASSWORD;
+      const password = 'TEST_PASSWORD';
+      const env = { password };
       expect(password).toEqual('testPassword');
       let opts;
-      expect(cleanDataForLogging(opts)).toEqual(undefined);
+      expect(cleanDataForLogging(opts, env)).toEqual(undefined);
       opts = { auth: password };
-      expect(cleanDataForLogging(opts)).toEqual({ auth: hidden });
+      expect(cleanDataForLogging(opts, env)).toEqual({ auth: hidden });
       opts = { headers: { Authorization: password } };
-      expect(cleanDataForLogging(opts)).toEqual({ headers: { Authorization: hidden } });
+      expect(cleanDataForLogging(opts, env)).toEqual({ headers: { Authorization: hidden } });
       opts = { data: [{ thumbnailPhoto: password }] };
-      expect(cleanDataForLogging(opts)).toEqual({
+      expect(cleanDataForLogging(opts, env)).toEqual({
         data: [{ thumbnailPhoto: password.slice(0, 5) }],
       });
     });

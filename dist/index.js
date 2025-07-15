@@ -23,6 +23,6 @@ __exportStar(require("./logging"), exports);
 __exportStar(require("./math"), exports);
 __exportStar(require("./objects"), exports);
 __exportStar(require("./reg"), exports);
-__exportStar(require("./stats"), exports);
+__exportStar(require("./stats.ignore"), exports);
 __exportStar(require("./times"), exports);
 __exportStar(require("./ts-types"), exports);
