@@ -7,6 +7,5 @@ export * from './logging';
 export * from './math';
 export * from './objects';
 export * from './reg';
-export * from './stats.ignore';
 export * from './times';
 export * from './ts-types';
