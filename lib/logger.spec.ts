@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { logger, LoggerConfig, updateLoggerConfig } from './logger';
 
-const getConsoleSpy = () => jest.spyOn(console, 'log').mockImplementation(jest.fn());
+const getConsoleSpy = () => jest.spyOn(console, 'log');
 
 const escapeForRegex = (str) => {
   if (!/[.*+?^${}()|[\]\\]/.test(str)) {
@@ -39,7 +39,7 @@ describe('logger', () => {
     expect(nowSpy).toHaveBeenCalledTimes(1);
     expect(consoleSpy).toHaveBeenCalledTimes(1);
 
-    const consoleSpyCalledWith = consoleSpy.mock.calls[0][0];
+    const consoleSpyCalledWith = consoleSpy.mock.calls[0].join(' ');
 
     const consoleSpyRegex = new RegExp(
       `\\[ERROR\\].+${escapeForRegex(mockISOStringParsed)} /lib/logger.spec.ts:[0-9]{1,4} test`,
@@ -64,7 +64,7 @@ describe('logger', () => {
     expect(consoleSpy).toHaveBeenCalledTimes(1);
     const consoleSpyRegex = new RegExp(`\\[INFO\\].+${escapeForRegex(mockISOStringParsed)}`);
 
-    const consoleSpyCalledWith = consoleSpy.mock.calls[0][0];
+    const consoleSpyCalledWith = consoleSpy.mock.calls[0].join(' ');
     expect([
       consoleSpyCalledWith,
       consoleSpyRegex,
@@ -83,12 +83,40 @@ describe('logger', () => {
     const consoleSpyRegex = new RegExp(
       `${escapeForRegex('[INFO]')}.+${escapeForRegex(mockTime)}.+test ${escapeForRegex(data)}`,
     );
-    const consoleSpyCalledWith = consoleSpy.mock.calls[0][0];
+    const consoleSpyCalledWith = consoleSpy.mock.calls[0].join(' ');
     expect([
       consoleSpyCalledWith,
       escapeForRegex(mockTime),
       consoleSpyRegex,
       consoleSpyRegex.test(consoleSpyCalledWith),
     ]).toEqual([consoleSpyCalledWith, escapeForRegex(mockTime), consoleSpyRegex, true]);
+  });
+
+  it('should automatically stringify objects instead of [object Object]', () => {
+    const consoleSpy = getConsoleSpy();
+
+    const mockObj = {
+      nest: {
+        some: {
+          data: [1, 2, 3],
+        },
+      },
+    };
+
+    const err = new Error('mock error');
+    logger.error('test', mockObj, 'error: ', err, ', after error');
+
+    expect(consoleSpy).toHaveBeenCalledTimes(1);
+
+    const consoleSpyCalledWith = consoleSpy.mock.calls[0].join(' ');
+
+    const consoleSpyRegex = new RegExp(`mock error`);
+    const consoleSpyObjectRegex = new RegExp('object Object');
+
+    expect([
+      consoleSpyCalledWith,
+      consoleSpyRegex.test(consoleSpyCalledWith),
+      consoleSpyObjectRegex.test(consoleSpyCalledWith),
+    ]).toEqual([consoleSpyCalledWith, true, false]);
   });
 });

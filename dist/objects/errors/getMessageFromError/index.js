@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMessageFromError = exports.dbConnectionErrors = void 0;
-const __1 = require("../..");
 const js_types_1 = require("../../../js-types");
 const showStackForError_1 = require("../showStackForError");
 const removeModulesFromStack_1 = require("../removeModulesFromStack");
@@ -15,16 +14,9 @@ const getMessageFromError = (error) => {
             error = new Error(error);
         }
         const showStack = (0, showStackForError_1.showStackForError)(error);
-        let msg = 'error:';
+        let msg = '';
         const baseErrorMessage = error.message || error;
         msg += ` ${baseErrorMessage}`;
-        let stringifiedError;
-        stringifiedError = (0, __1.stringify)(error);
-        if (stringifiedError &&
-            stringifiedError !== '{}' &&
-            stringifiedError !== (0, __1.stringify)(baseErrorMessage)) {
-            msg += `, stringified: ${stringifiedError}`;
-        }
         if (showStack) {
             msg += `, stack:\n${(0, removeModulesFromStack_1.removeModulesFromStack)(error).stack}`;
         }

@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.logger = exports.getFileDetails = exports.updateLoggerConfig = void 0;
+const objects_1 = require("./objects");
 const validLevels = ['trace', 'debug', 'info', 'warn', 'error'];
 const loggerConfig = {
     level: 'info',
@@ -33,12 +34,42 @@ const colors = {
 const makeDefaultTimeStamp = () => new Date().toISOString().replace('T', ' ').replace('Z', '');
 const padWith = (length) => (padChar, str) => str.length < length ? padChar.repeat(length - str.length) : ' ';
 const padWithMaxLevelLength = padWith(Math.max(...validLevels.map((level) => level.length)) + 1);
+const stringifyObjects = (args) => {
+    if (loggerConfig.skipStringify) {
+        return args;
+    }
+    const stringifiedArgs = args.map((arg) => {
+        try {
+            if (arg instanceof Error) {
+                if (loggerConfig.stringifyError) {
+                    return loggerConfig.stringifyError(arg);
+                }
+                const errorObject = {};
+                for (const propertyName of Object.getOwnPropertyNames(arg)) {
+                    errorObject[propertyName] = arg[propertyName];
+                }
+                return (0, objects_1.getMessageFromError)(arg);
+            }
+            if (typeof arg === 'object' && arg !== null) {
+                if (loggerConfig.stringifyObject) {
+                    return loggerConfig.stringifyObject(arg);
+                }
+                return JSON.stringify(arg);
+            }
+            return String(arg);
+        }
+        catch (error) {
+            return String(arg);
+        }
+    });
+    return stringifiedArgs;
+};
 const log = (level) => (...args) => {
     if (validLevels.indexOf(level) >= validLevels.indexOf(loggerConfig.level)) {
         const timestamp = loggerConfig.timestampFunction
             ? loggerConfig.timestampFunction()
             : makeDefaultTimeStamp();
-        console.log(`${colors[level]}[${level.toUpperCase()}]\x1b[0m${padWithMaxLevelLength(' ', level)}${timestamp} ${(0, exports.getFileDetails)()} ${args.join(' ')}`);
+        console.log(`${colors[level]}[${level.toUpperCase()}]\x1b[0m${padWithMaxLevelLength(' ', level)}${timestamp} ${(0, exports.getFileDetails)()}`, stringifyObjects(args).join(' '));
     }
 };
 exports.logger = {

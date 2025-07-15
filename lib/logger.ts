@@ -1,9 +1,14 @@
+import { getMessageFromError } from './objects';
+
 export type LoggerLevel = 'info' | 'debug' | 'trace' | 'warn' | 'error';
 
 export type LoggerConfig = {
   baseDirectory?: string;
   level: LoggerLevel;
+  skipStringify?: boolean;
   stackDepth: number;
+  stringifyError?: (error: Error) => string;
+  stringifyObject?: (arg: any) => string;
   timestampFunction?: () => string;
 };
 
@@ -49,6 +54,37 @@ const padWith = (length: number) => (padChar: string, str: string) =>
   str.length < length ? padChar.repeat(length - str.length) : ' ';
 const padWithMaxLevelLength = padWith(Math.max(...validLevels.map((level) => level.length)) + 1);
 
+const stringifyObjects = (args) => {
+  if (loggerConfig.skipStringify) {
+    return args;
+  }
+
+  const stringifiedArgs = args.map((arg) => {
+    try {
+      if (arg instanceof Error) {
+        if (loggerConfig.stringifyError) {
+          return loggerConfig.stringifyError(arg);
+        }
+        const errorObject = {};
+        for (const propertyName of Object.getOwnPropertyNames(arg)) {
+          errorObject[propertyName] = arg[propertyName];
+        }
+        return getMessageFromError(arg);
+      }
+      if (typeof arg === 'object' && arg !== null) {
+        if (loggerConfig.stringifyObject) {
+          return loggerConfig.stringifyObject(arg);
+        }
+        return JSON.stringify(arg);
+      }
+      return String(arg);
+    } catch (error) {
+      return String(arg);
+    }
+  });
+  return stringifiedArgs;
+};
+
 const log =
   (level: LoggerLevel) =>
   (...args: any) => {
@@ -57,7 +93,8 @@ const log =
         ? loggerConfig.timestampFunction()
         : makeDefaultTimeStamp();
       console.log(
-        `${colors[level]}[${level.toUpperCase()}]\x1b[0m${padWithMaxLevelLength(' ', level)}${timestamp} ${getFileDetails()} ${args.join(' ')}`,
+        `${colors[level]}[${level.toUpperCase()}]\x1b[0m${padWithMaxLevelLength(' ', level)}${timestamp} ${getFileDetails()}`,
+        stringifyObjects(args).join(' '),
       );
     }
   };
