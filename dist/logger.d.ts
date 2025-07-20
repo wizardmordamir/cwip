@@ -4,8 +4,8 @@ export type LoggerConfig = {
     level: LoggerLevel;
     skipStringify?: boolean;
     stackDepth: number;
-    stringifyError?: (error: Error) => string;
-    stringifyObject?: (arg: any) => string;
+    stringifyError?: (_error: Error) => string;
+    stringifyObject?: (_arg: any) => string;
     timestampFunction?: () => string;
 };
 export declare const updateLoggerConfig: (config: Partial<LoggerConfig>) => LoggerConfig & Partial<LoggerConfig>;

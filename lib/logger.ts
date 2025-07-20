@@ -7,8 +7,8 @@ export type LoggerConfig = {
   level: LoggerLevel;
   skipStringify?: boolean;
   stackDepth: number;
-  stringifyError?: (error: Error) => string;
-  stringifyObject?: (arg: any) => string;
+  stringifyError?: (_error: Error) => string;
+  stringifyObject?: (_arg: any) => string;
   timestampFunction?: () => string;
 };
 
@@ -27,10 +27,9 @@ export const getFileDetails = (stackDepth?: number) => {
   const stackSection =
     stackTraceArray[Math.min(stackDepth || loggerConfig.stackDepth, stackTraceArray.length - 1)] ||
     '';
-  const stackMatch = stackSection.match(/at (.+)\)/);
-
+  const stackMatch = stackSection.match(/at (.+)(?:\))?/);
   if (!stackMatch || stackMatch.length < 1) {
-    return '/<unknown>';
+    return '';
   }
 
   const [filePath, line] = stackMatch[1].split(':');

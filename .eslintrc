@@ -18,7 +18,14 @@
     "space-before-blocks": ["error", "always"],
     "eol-last": ["error", "always"],
     "semi": ["error", "always"],
-    "no-unused-vars": "error"
+    "no-unused-vars": [
+      "warn", // Or "error"
+      {
+        "argsIgnorePattern": "^_", // Ignore variables starting with an underscore
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ]
   },
   "globals": {
     "Bun": false

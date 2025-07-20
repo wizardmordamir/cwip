@@ -13,9 +13,9 @@ const getFileDetails = (stackDepth) => {
     const stackTraceArray = new Error().stack?.split('\n').slice(1) || [];
     const stackSection = stackTraceArray[Math.min(stackDepth || loggerConfig.stackDepth, stackTraceArray.length - 1)] ||
         '';
-    const stackMatch = stackSection.match(/at (.+)\)/);
+    const stackMatch = stackSection.match(/at (.+)(?:\))?/);
     if (!stackMatch || stackMatch.length < 1) {
-        return '/<unknown>';
+        return '';
     }
     const [filePath, line] = stackMatch[1].split(':');
     const pieces = filePath.split('/');
