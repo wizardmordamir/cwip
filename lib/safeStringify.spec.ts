@@ -1,0 +1,30 @@
+import { safeStringify } from './safeStringify';
+
+describe('safeStringify', () => {
+  it('stringifies primitives', () => {
+    expect(safeStringify(123)).toBe('123');
+    expect(safeStringify(undefined)).toBe('undefined');
+    expect(safeStringify(null)).toBe('null');
+    expect(safeStringify('hello')).toBe('hello');
+    expect(safeStringify(true)).toBe('true');
+    expect(safeStringify(false)).toBe('false');
+    expect(safeStringify(Symbol('foo'))).toBe('Symbol(foo)');
+    expect(safeStringify(() => {})).toBe('() => {}');
+  });
+
+  it('handles objects', () => {
+    expect(safeStringify({ foo: undefined })).toBe('{"foo":"undefined"}');
+    expect(safeStringify({ foo: 'bar', arr: [1, 2] })).toBe('{"foo":"bar","arr":"[1, 2]"}');
+  });
+
+  it('handles circular references', () => {
+    const obj = { foo: 'bar' };
+    obj.self = obj;
+    expect(safeStringify(obj)).toBe('{"foo":"bar","self":"[Circular]"}');
+  });
+
+  it('handles arrays', () => {
+    expect(safeStringify([1, 2, 3])).toBe('[1, 2, 3]');
+    expect(safeStringify(['a', 'b', 'c'])).toBe('[a, b, c]');
+  });
+});

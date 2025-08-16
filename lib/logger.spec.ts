@@ -58,7 +58,7 @@ describe('logger', () => {
     }));
     global.Date.now = () => 0;
     const consoleSpy = getConsoleSpy();
-    const data = 'a'; //JSON.stringify({a: 'b'});
+    const data = 'a';
     logger.info('test', data);
     expect(nowSpy).toHaveBeenCalledTimes(1);
     expect(consoleSpy).toHaveBeenCalledTimes(1);

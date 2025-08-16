@@ -1,5 +1,6 @@
 import { hoursPastDate } from './times';
 import { isString } from './js-types';
+import { stringify } from './objects';
 
 type Obj = Record<string, any>;
 
@@ -41,7 +42,7 @@ export const cleanDataForLogging = (opts, env: Obj) => {
   if (isString(opts)) {
     return cleanStringForLogging(opts, env);
   }
-  const optsClone = JSON.parse(JSON.stringify(opts));
+  const optsClone = JSON.parse(stringify(opts));
   if (optsClone.auth) {
     optsClone.auth = loggingSettings.redactionText;
   }
@@ -51,7 +52,7 @@ export const cleanDataForLogging = (opts, env: Obj) => {
   if (optsClone.response?.config) {
     delete optsClone.response.config;
   }
-  const cleanStringJSON = cleanDataForLogging(JSON.stringify(optsClone), env);
+  const cleanStringJSON = cleanDataForLogging(stringify(optsClone), env);
   return JSON.parse(cleanStringJSON);
 };
 

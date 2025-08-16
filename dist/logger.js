@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.logger = exports.getFileDetails = exports.updateLoggerConfig = void 0;
 const objects_1 = require("./objects");
+const safeStringify_1 = require("./safeStringify");
 const validLevels = ['trace', 'debug', 'info', 'warn', 'error'];
 const loggerConfig = {
     level: 'info',
@@ -44,17 +45,13 @@ const stringifyObjects = (args) => {
                 if (loggerConfig.stringifyError) {
                     return loggerConfig.stringifyError(arg);
                 }
-                const errorObject = {};
-                for (const propertyName of Object.getOwnPropertyNames(arg)) {
-                    errorObject[propertyName] = arg[propertyName];
-                }
                 return (0, objects_1.getMessageFromError)(arg);
             }
             if (typeof arg === 'object' && arg !== null) {
                 if (loggerConfig.stringifyObject) {
                     return loggerConfig.stringifyObject(arg);
                 }
-                return JSON.stringify(arg);
+                return (0, safeStringify_1.safeStringify)(arg);
             }
             return String(arg);
         }

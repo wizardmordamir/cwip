@@ -1,4 +1,5 @@
 import { getMessageFromError } from './objects';
+import { safeStringify } from './safeStringify';
 
 export type LoggerLevel = 'info' | 'debug' | 'trace' | 'warn' | 'error';
 
@@ -64,17 +65,13 @@ const stringifyObjects = (args) => {
         if (loggerConfig.stringifyError) {
           return loggerConfig.stringifyError(arg);
         }
-        const errorObject = {};
-        for (const propertyName of Object.getOwnPropertyNames(arg)) {
-          errorObject[propertyName] = arg[propertyName];
-        }
         return getMessageFromError(arg);
       }
       if (typeof arg === 'object' && arg !== null) {
         if (loggerConfig.stringifyObject) {
           return loggerConfig.stringifyObject(arg);
         }
-        return JSON.stringify(arg);
+        return safeStringify(arg);
       }
       return String(arg);
     } catch (error) {

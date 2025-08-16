@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.shouldLogMessage = exports.cleanDataForLogging = exports.cleanStringForLogging = exports.updateLoggingSettings = exports.loggingSettings = void 0;
 const times_1 = require("./times");
 const js_types_1 = require("./js-types");
+const objects_1 = require("./objects");
 exports.loggingSettings = {
     disableSameMessagesLimit: false,
     redactionText: 'HIDDEN',
@@ -32,7 +33,7 @@ const cleanDataForLogging = (opts, env) => {
     if ((0, js_types_1.isString)(opts)) {
         return (0, exports.cleanStringForLogging)(opts, env);
     }
-    const optsClone = JSON.parse(JSON.stringify(opts));
+    const optsClone = JSON.parse((0, objects_1.stringify)(opts));
     if (optsClone.auth) {
         optsClone.auth = exports.loggingSettings.redactionText;
     }
@@ -42,7 +43,7 @@ const cleanDataForLogging = (opts, env) => {
     if (optsClone.response?.config) {
         delete optsClone.response.config;
     }
-    const cleanStringJSON = (0, exports.cleanDataForLogging)(JSON.stringify(optsClone), env);
+    const cleanStringJSON = (0, exports.cleanDataForLogging)((0, objects_1.stringify)(optsClone), env);
     return JSON.parse(cleanStringJSON);
 };
 exports.cleanDataForLogging = cleanDataForLogging;

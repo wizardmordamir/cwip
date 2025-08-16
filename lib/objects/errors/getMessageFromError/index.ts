@@ -12,12 +12,16 @@ export const getMessageFromError = (error) => {
     if (isString(error)) {
       error = new Error(error);
     }
-    const showStack = showStackForError(error);
+    const errorObject: any = {};
+    for (const propertyName of Object.getOwnPropertyNames(error)) {
+      errorObject[propertyName] = error[propertyName];
+    }
+    const showStack = showStackForError(errorObject);
     let msg = '';
-    const baseErrorMessage = error.message || error;
+    const baseErrorMessage = errorObject.message || errorObject;
     msg += ` ${baseErrorMessage}`;
     if (showStack) {
-      msg += `, stack:\n${removeModulesFromStack(error).stack}`;
+      msg += `, stack:\n${removeModulesFromStack(errorObject).stack}`;
     }
     return msg.trim();
   } catch (err) {
