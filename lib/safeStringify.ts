@@ -2,54 +2,41 @@ const safeTypes = ['boolean', 'number'];
 
 export const isString = (value: any): value is string => typeof value === 'string';
 
-export const safeStringify = (obj: any, seen = new WeakSet()): string => {
-  if (typeof obj === 'undefined') {
-    return 'undefined';
-  }
-
-  if (obj === null) {
-    return 'null';
-  }
-
-  if (isString(obj)) {
+function decycle(obj: any, seen = new WeakSet()): any {
+  if (
+    typeof obj === 'undefined' ||
+    obj === null ||
+    safeTypes.includes(typeof obj) ||
+    isString(obj)
+  ) {
     return obj;
   }
-
-  if (typeof obj === 'symbol') {
+  if (typeof obj === 'symbol' || typeof obj === 'function') {
     return obj.toString();
   }
-
-  if (typeof obj === 'function') {
-    return obj.toString();
-  }
-
-  if (safeTypes.includes(typeof obj)) {
-    return JSON.stringify(obj);
-  }
-
   if (seen.has(obj)) {
     return '[Circular]';
   }
-
-  try {
-    seen.add(obj);
-  } catch (err) {}
-
   if (Array.isArray(obj)) {
-    return '[' + obj.map((item) => safeStringify(item, seen)).join(', ') + ']';
+    seen.add(obj);
+    return obj.map((item) => decycle(item, seen));
   }
-
   if (typeof obj === 'object') {
-    const keys = Object.keys(obj);
-    const result = {};
-
-    for (const key of keys) {
-      const value = obj[key];
-      result[key] = safeStringify(value, seen);
+    seen.add(obj);
+    const result: Record<string, any> = {};
+    for (const key of Object.keys(obj)) {
+      result[key] = decycle(obj[key], seen);
     }
-
-    return JSON.stringify(result);
+    return result;
   }
+  return obj;
+}
 
-  return JSON.stringify(obj);
+export const safeStringify = (obj: any): string => {
+  if (typeof obj === 'undefined') return undefined;
+  if (obj === null) return 'null';
+  if (typeof obj === 'string') return obj;
+  if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
+  if (typeof obj === 'symbol' || typeof obj === 'function') return obj.toString();
+  return JSON.stringify(decycle(obj));
 };

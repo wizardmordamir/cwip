@@ -3,7 +3,7 @@ import { safeStringify } from './safeStringify';
 describe('safeStringify', () => {
   it('stringifies primitives', () => {
     expect(safeStringify(123)).toBe('123');
-    expect(safeStringify(undefined)).toBe('undefined');
+    expect(safeStringify(undefined)).toBe(undefined);
     expect(safeStringify(null)).toBe('null');
     expect(safeStringify('hello')).toBe('hello');
     expect(safeStringify(true)).toBe('true');
@@ -13,8 +13,8 @@ describe('safeStringify', () => {
   });
 
   it('handles objects', () => {
-    expect(safeStringify({ foo: undefined })).toBe('{"foo":"undefined"}');
-    expect(safeStringify({ foo: 'bar', arr: [1, 2] })).toBe('{"foo":"bar","arr":"[1, 2]"}');
+    expect(safeStringify({ foo: undefined })).toBe('{}');
+    expect(safeStringify({ foo: 'bar', arr: [1, 2] })).toBe('{"foo":"bar","arr":[1,2]}');
   });
 
   it('handles circular references', () => {
@@ -24,7 +24,28 @@ describe('safeStringify', () => {
   });
 
   it('handles arrays', () => {
-    expect(safeStringify([1, 2, 3])).toBe('[1, 2, 3]');
-    expect(safeStringify(['a', 'b', 'c'])).toBe('[a, b, c]');
+    expect(safeStringify([1, 2, 3])).toBe('[1,2,3]');
+    expect(safeStringify(['a', 'b', 'c'])).toBe('["a","b","c"]');
+  });
+
+  it('should not add extra parenthesis', () => {
+    const obj = {
+      data: {
+        id: 1,
+        name: 'Test',
+      },
+      arr: [1, 2, 3],
+      nested: {
+        level1: {
+          level2: {
+            level3: 'deep value',
+          },
+        },
+      },
+    };
+
+    expect(safeStringify(obj)).toBe(
+      '{"data":{"id":1,"name":"Test"},"arr":[1,2,3],"nested":{"level1":{"level2":{"level3":"deep value"}}}}',
+    );
   });
 });

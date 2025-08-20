@@ -1,4 +1,5 @@
 export { deepClone } from './deepClone';
+export { deepFreeze } from './deepFreeze';
 export * from './errors';
 export { excludesKeys } from './excludesKeys';
 export { extend } from './extend';
@@ -9,7 +10,7 @@ export { getMissingKeys } from './getMissingKeys';
 export { hasAllKeys } from './hasAllKeys';
 export { hasKey } from './hasKey';
 export { objHasKey } from './objHasKey';
-export { removeKeys } from './removeKeys';
+export { removeKeysMutate } from './removeKeysMutate';
 export { shallowClone } from './shallowClone';
 export { stringify } from './stringify';
 export { withoutKeys } from './withoutKeys';
