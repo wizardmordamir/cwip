@@ -1,4 +1,4 @@
-export const mergeDeep = (target: any, source: any): any => {
+const mergeDeep = (target: any, source: any): any => {
   return Object.keys(source as object).reduce((acc, key) => {
     if (Array.isArray(source[key])) {
       acc[key] = source[key];

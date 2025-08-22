@@ -9,6 +9,7 @@ export { getDeepKey } from './getDeepKey';
 export { getMissingKeys } from './getMissingKeys';
 export { hasAllKeys } from './hasAllKeys';
 export { hasKey } from './hasKey';
+export { mergeObjectsDeep } from './mergeObjectsDeep';
 export { objHasKey } from './objHasKey';
 export { removeKeysMutate } from './removeKeysMutate';
 export { shallowClone } from './shallowClone';
