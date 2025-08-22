@@ -1,7 +1,7 @@
 {
   "name": "cwip",
-  "version": "1.1.8",
-  "description": "Utility functions for node js",
+  "version": "1.1.9",
+  "description": "Utility functions",
   "main": "dist/index.js",
   "type": "commonjs",
   "types": "dist/index.d.ts",
@@ -18,18 +18,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/curtwphillips/cwip.git"
+    "url": "git+https://github.com/wizardmordamir/cwip.git"
   },
   "keywords": [
     "utilities",
     "functions"
   ],
-  "author": "Curtis Phillips <curtwphillips@gmail.com> (http://curtwphillips.com)",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/curtwphillips/cwip/issues"
+    "url": "https://github.com/wizardmordamir/cwip/issues"
   },
-  "homepage": "https://github.com/curtwphillips/cwip#readme",
+  "homepage": "https://github.com/wizardmordamir/cwip#readme",
   "devDependencies": {
     "@babel/core": "^7.23.9",
     "@babel/preset-env": "^7.23.9",
