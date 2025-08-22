@@ -6,6 +6,7 @@ export * from './logger';
 export * from './logging';
 export * from './math';
 export * from './objects';
+export * from './pipes';
 export * from './reg';
 export * from './times';
 export * from './ts-types';

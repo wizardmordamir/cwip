@@ -19,7 +19,7 @@ describe('safeStringify', () => {
 
   it('handles circular references', () => {
     const obj = { foo: 'bar' };
-    obj.self = obj;
+    (obj as any).self = obj;
     expect(safeStringify(obj)).toBe('{"foo":"bar","self":"[Circular]"}');
   });
 
