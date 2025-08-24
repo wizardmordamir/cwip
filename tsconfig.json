@@ -3,7 +3,7 @@
     "baseUrl": "./dist",
     "module": "commonjs",
     "target": "es2022",
-    "rootDir": "lib",
+    "rootDir": "src",
     "outDir": "dist",
     "moduleResolution": "node",
     "esModuleInterop": true,
@@ -13,6 +13,6 @@
     "declaration": true,
     "resolveJsonModule": true
   },
-  "include": ["lib/index.ts"],
+  "include": ["src/index.ts"],
   "exclude": ["**/node_modules", "dist"]
 }

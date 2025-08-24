@@ -1,0 +1,2 @@
+export declare const wrapAsyncPipe: <U>(wrapper: (_fn: (_value: U) => U | Promise<U>) => (_value: U) => Promise<U>, errorHandler: (_error: any) => U) => (...fns: ((_value: U) => U | Promise<U>)[]) => (initialValue: U) => Promise<U>;
+//# sourceMappingURL=wrapAsyncPipe.d.ts.map
