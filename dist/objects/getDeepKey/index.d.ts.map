@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../src/objects/getDeepKey/index.ts"],"names":[],"mappings":"AAAA,eAAO,MAAM,UAAU,GAAI,KAAK,GAAG,EAAE,SAAS,MAAM,EAAE,YAAW,MAAY,KAAG,GACL,CAAC"}
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../src/objects/getDeepKey/index.ts"],"names":[],"mappings":"AAAA,eAAO,MAAM,UAAU,GAAI,KAAK,GAAG,EAAE,SAAS,MAAM,EAAE,YAAW,MAAY,KAAG,GAM/E,CAAC"}
