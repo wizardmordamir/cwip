@@ -16,7 +16,7 @@ exports.isFunction = isFunction;
 const isNumber = (val) => Number.isFinite(val);
 exports.isNumber = isNumber;
 // false for instanceof String
-const isString = (val) => typeof val === 'string';
+const isString = (value) => typeof value === 'string';
 exports.isString = isString;
 const isObjectNotArray = (val) => typeof val === 'object' && val !== null && !Array.isArray(val);
 exports.isObjectNotArray = isObjectNotArray;

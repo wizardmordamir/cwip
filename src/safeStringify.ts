@@ -1,6 +1,6 @@
-const safeTypes = ['boolean', 'number'];
+import { isString } from './js-types';
 
-export const isString = (value: any): value is string => typeof value === 'string';
+const safeTypes = ['boolean', 'number'];
 
 function decycle(obj: any, seen = new WeakSet()): any {
   if (
@@ -39,4 +39,9 @@ export const safeStringify = (obj: any): string => {
   if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
   if (typeof obj === 'symbol' || typeof obj === 'function') return obj.toString();
   return JSON.stringify(decycle(obj));
+};
+
+export const safeStringifyIfNeeded = (obj: any): string => {
+  if (typeof obj === 'string') return obj;
+  return safeStringify(obj);
 };

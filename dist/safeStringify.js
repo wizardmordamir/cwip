@@ -1,14 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.safeStringify = exports.isString = void 0;
+exports.safeStringifyIfNeeded = exports.safeStringify = void 0;
+const js_types_1 = require("./js-types");
 const safeTypes = ['boolean', 'number'];
-const isString = (value) => typeof value === 'string';
-exports.isString = isString;
 function decycle(obj, seen = new WeakSet()) {
     if (typeof obj === 'undefined' ||
         obj === null ||
         safeTypes.includes(typeof obj) ||
-        (0, exports.isString)(obj)) {
+        (0, js_types_1.isString)(obj)) {
         return obj;
     }
     if (typeof obj === 'symbol' || typeof obj === 'function') {
@@ -45,3 +44,9 @@ const safeStringify = (obj) => {
     return JSON.stringify(decycle(obj));
 };
 exports.safeStringify = safeStringify;
+const safeStringifyIfNeeded = (obj) => {
+    if (typeof obj === 'string')
+        return obj;
+    return (0, exports.safeStringify)(obj);
+};
+exports.safeStringifyIfNeeded = safeStringifyIfNeeded;

@@ -13,7 +13,7 @@ export const isFunction = <T>(val: T): boolean => typeof val === 'function';
 export const isNumber = <T>(val: T): boolean => Number.isFinite(val);
 
 // false for instanceof String
-export const isString = <T>(val: T): boolean => typeof val === 'string';
+export const isString = (value: any): value is string => typeof value === 'string';
 
 export const isObjectNotArray = <T>(val: T): boolean =>
   typeof val === 'object' && val !== null && !Array.isArray(val);

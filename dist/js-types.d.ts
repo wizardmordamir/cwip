@@ -4,7 +4,7 @@ export declare const containsString: (string: string, substr: string, insensitiv
 export declare const isPrimitive: <T>(val: T) => boolean;
 export declare const isFunction: <T>(val: T) => boolean;
 export declare const isNumber: <T>(val: T) => boolean;
-export declare const isString: <T>(val: T) => boolean;
+export declare const isString: (value: any) => value is string;
 export declare const isObjectNotArray: <T>(val: T) => boolean;
 export declare const isEmptyDeep: <T>(obj: T) => boolean;
 export declare const stringIncludesAny: (strings: string[], string: string, insensitive?: boolean) => boolean;

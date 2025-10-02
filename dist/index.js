@@ -24,5 +24,6 @@ __exportStar(require("./math"), exports);
 __exportStar(require("./objects"), exports);
 __exportStar(require("./pipes"), exports);
 __exportStar(require("./reg"), exports);
+__exportStar(require("./safeStringify"), exports);
 __exportStar(require("./times"), exports);
 __exportStar(require("./ts-types"), exports);
