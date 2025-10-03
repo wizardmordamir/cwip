@@ -1,1 +1,1 @@
-{"version":3,"file":"safeStringify.d.ts","sourceRoot":"","sources":["../src/safeStringify.ts"],"names":[],"mappings":"AAkCA,eAAO,MAAM,aAAa,GAAI,KAAK,GAAG,KAAG,MAOxC,CAAC;AAEF,eAAO,MAAM,qBAAqB,GAAI,KAAK,GAAG,KAAG,MAGhD,CAAC"}
+{"version":3,"file":"safeStringify.d.ts","sourceRoot":"","sources":["../src/safeStringify.ts"],"names":[],"mappings":"AAkCA,eAAO,MAAM,aAAa,GAAI,KAAK,GAAG,EAAE,cAAS,EAAE,WAAM,KAAG,MAO3D,CAAC;AAGF,eAAO,MAAM,qBAAqB,GAAI,KAAK,GAAG,EAAE,cAAS,EAAE,WAAM,KAAG,MAGnE,CAAC"}

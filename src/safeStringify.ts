@@ -32,16 +32,17 @@ function decycle(obj: any, seen = new WeakSet()): any {
   return obj;
 }
 
-export const safeStringify = (obj: any): string => {
+export const safeStringify = (obj: any, replacer?, space?): string => {
   if (typeof obj === 'undefined') return undefined;
   if (obj === null) return 'null';
   if (typeof obj === 'string') return obj;
   if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
   if (typeof obj === 'symbol' || typeof obj === 'function') return obj.toString();
-  return JSON.stringify(decycle(obj));
+  return JSON.stringify(decycle(obj), replacer, space);
 };
 
-export const safeStringifyIfNeeded = (obj: any): string => {
+// takes same params as JSON.stringify
+export const safeStringifyIfNeeded = (obj: any, replacer?, space?): string => {
   if (typeof obj === 'string') return obj;
-  return safeStringify(obj);
+  return safeStringify(obj, replacer, space);
 };

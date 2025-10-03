@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isRetriableHttpError = exports.isRetriableHttpStatus = void 0;
-const dist_1 = require("../../../../dist");
+const isNetworkError_1 = require("../isNetworkError");
 const isRetriableHttpStatus = (statusCode) => statusCode === 408 || // Request Timeout
     statusCode === 429 || // Too Many Requests
     (statusCode >= 500 && statusCode <= 599); // 5xx Server Errors
@@ -14,7 +14,7 @@ const isRetriableHttpError = (error) => {
         if ('status' in error) {
             return (0, exports.isRetriableHttpStatus)(Number(error.status));
         }
-        if ((0, dist_1.isNetworkError)(error)) {
+        if ((0, isNetworkError_1.isNetworkError)(error)) {
             return true;
         }
     }

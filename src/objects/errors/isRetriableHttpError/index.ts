@@ -1,4 +1,4 @@
-import { isNetworkError } from '../../../../dist';
+import { isNetworkError } from '../isNetworkError';
 
 export const isRetriableHttpStatus = (statusCode: number): boolean =>
   statusCode === 408 || // Request Timeout
