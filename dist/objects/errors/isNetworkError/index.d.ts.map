@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../../src/objects/errors/isNetworkError/index.ts"],"names":[],"mappings":"AAEA,eAAO,MAAM,6BAA6B,UAAqD,CAAC;AAEhG,eAAO,MAAM,cAAc,GACzB,QAAG,EACH,yBAAwB,MAAM,EAAkC,YACe,CAAC"}
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../../src/objects/errors/isNetworkError/index.ts"],"names":[],"mappings":"AAEA,eAAO,MAAM,6BAA6B,UAmBzC,CAAC;AAEF,eAAO,MAAM,cAAc,GACzB,QAAG,EACH,yBAAwB,MAAM,EAAkC,YAWjE,CAAC"}

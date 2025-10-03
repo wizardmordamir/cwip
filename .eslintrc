@@ -3,12 +3,12 @@
     "node": true,
     "jest": true,
     "es2022": true,
-    "commonjs": true
+    "commonjs": true,
   },
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": "latest",
-    "sourceType": "module"
+    "sourceType": "module",
   },
   "rules": {
     "comma-spacing": "error",
@@ -23,11 +23,11 @@
       {
         "argsIgnorePattern": "^_", // Ignore variables starting with an underscore
         "varsIgnorePattern": "^_",
-        "caughtErrorsIgnorePattern": "^_"
-      }
-    ]
+        "caughtErrorsIgnorePattern": "^_",
+      },
+    ],
   },
   "globals": {
-    "Bun": false
-  }
+    "Bun": false,
+  },
 }
