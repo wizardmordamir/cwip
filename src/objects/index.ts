@@ -1,5 +1,6 @@
 export { deepClone } from './deepClone';
 export { deepFreeze } from './deepFreeze';
+export * from './deepJsonParse';
 export * from './errors';
 export { excludesKeys } from './excludesKeys';
 export { extend } from './extend';

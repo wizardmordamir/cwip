@@ -1,12 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.showStackForError = exports.removeModulesFromStack = exports.isNetworkError = exports.isAxiosError = exports.getMessageFromError = void 0;
+exports.showStackForError = exports.removeModulesFromStack = exports.isRetriableHttpStatus = exports.isRetriableHttpError = exports.isNetworkError = exports.isAxiosError = exports.getMessageFromError = void 0;
 var getMessageFromError_1 = require("./getMessageFromError");
 Object.defineProperty(exports, "getMessageFromError", { enumerable: true, get: function () { return getMessageFromError_1.getMessageFromError; } });
 var isAxiosError_1 = require("./isAxiosError");
 Object.defineProperty(exports, "isAxiosError", { enumerable: true, get: function () { return isAxiosError_1.isAxiosError; } });
 var isNetworkError_1 = require("./isNetworkError");
 Object.defineProperty(exports, "isNetworkError", { enumerable: true, get: function () { return isNetworkError_1.isNetworkError; } });
+var isRetriableHttpError_1 = require("./isRetriableHttpError");
+Object.defineProperty(exports, "isRetriableHttpError", { enumerable: true, get: function () { return isRetriableHttpError_1.isRetriableHttpError; } });
+Object.defineProperty(exports, "isRetriableHttpStatus", { enumerable: true, get: function () { return isRetriableHttpError_1.isRetriableHttpStatus; } });
 var removeModulesFromStack_1 = require("./removeModulesFromStack");
 Object.defineProperty(exports, "removeModulesFromStack", { enumerable: true, get: function () { return removeModulesFromStack_1.removeModulesFromStack; } });
 var showStackForError_1 = require("./showStackForError");

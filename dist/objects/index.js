@@ -19,6 +19,7 @@ var deepClone_1 = require("./deepClone");
 Object.defineProperty(exports, "deepClone", { enumerable: true, get: function () { return deepClone_1.deepClone; } });
 var deepFreeze_1 = require("./deepFreeze");
 Object.defineProperty(exports, "deepFreeze", { enumerable: true, get: function () { return deepFreeze_1.deepFreeze; } });
+__exportStar(require("./deepJsonParse"), exports);
 __exportStar(require("./errors"), exports);
 var excludesKeys_1 = require("./excludesKeys");
 Object.defineProperty(exports, "excludesKeys", { enumerable: true, get: function () { return excludesKeys_1.excludesKeys; } });

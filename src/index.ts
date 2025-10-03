@@ -9,5 +9,6 @@ export * from './objects';
 export * from './pipes';
 export * from './reg';
 export * from './safeStringify';
+export * from './strings';
 export * from './times';
 export * from './ts-types';
