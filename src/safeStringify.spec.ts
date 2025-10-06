@@ -17,6 +17,62 @@ describe('safeStringify', () => {
     expect(safeStringify({ foo: 'bar', arr: [1, 2] })).toBe('{"foo":"bar","arr":[1,2]}');
   });
 
+  it('handles Date objects', () => {
+    const date = new Date('2020-01-01T00:00:00.000Z');
+    expect(safeStringify({ date })).toBe(`{"date":"${date.toISOString()}"}`);
+  });
+
+  it('handles RegExp objects', () => {
+    const regex = /abc/gi;
+    console.log('********* regex:', safeStringify({ regex }));
+    expect(safeStringify({ regex })).toBe('{"regex":"/abc/gi"}');
+  });
+
+  it('handles Set objects', () => {
+    const set = new Set([1, 2, 3]);
+    expect(safeStringify({ set })).toBe('{"set":[1,2,3]}');
+  });
+
+  it('handles Map objects with string keys', () => {
+    const map = new Map([
+      ['a', 1],
+      ['b', 2],
+    ]);
+    expect(safeStringify({ map })).toBe('{"map":[["a",1],["b",2]]}');
+  });
+
+  it('handles Map objects with non-string keys', () => {
+    const keyObj = { k: 1 };
+    const map = new Map([[keyObj, 2]]);
+    expect(safeStringify({ map })).toBe(`{"map":[[${safeStringify(keyObj)},2]]}`);
+  });
+
+  it('handles Error objects', () => {
+    const err = new Error('fail');
+    err.name = 'CustomError';
+    (err as any).extra = 42;
+    const result = JSON.parse(safeStringify({ err }));
+    expect(result.err.name).toBe('CustomError');
+    expect(result.err.message).toBe('fail');
+    expect(typeof result.err.stack).toBe('string');
+    expect(result.err.extra).toBe(42);
+  });
+
+  it('handles functions and symbols in objects', () => {
+    const fn = function test() {};
+    const sym = Symbol('sym');
+    const obj = { fn, sym };
+    const str = safeStringify(obj);
+    expect(str).toContain('"fn":"function test() {}"');
+    expect(str).toContain('"sym":"Symbol(sym)"');
+  });
+
+  it('handles deeply nested circular structures', () => {
+    const obj: any = { a: 1 };
+    obj.b = { c: obj };
+    expect(safeStringify(obj)).toBe('{"a":1,"b":{"c":"[Circular]"}}');
+  });
+
   it('handles circular references', () => {
     const obj = { foo: 'bar' };
     (obj as any).self = obj;
