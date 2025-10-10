@@ -1,5 +1,5 @@
-import * as times from './times';
-import * as logging from './logging';
+import * as times from '../times';
+import * as logging from '../logging';
 
 const { cleanDataForLogging, loggingSettings, shouldLogMessage } = logging;
 

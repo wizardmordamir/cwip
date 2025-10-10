@@ -1,8 +1,8 @@
 /*
   Many of these functions require moment timezone injected
 */
-import { curry } from './functional';
-import { isString } from './js-types';
+import { curry } from '../../functional';
+import { isString } from '../../js-types';
 
 let moment;
 
@@ -41,10 +41,20 @@ export const dateFormatRegexes = {
   'YYYY-M-DD': /^\d{4}-\d{1}-\d{2}$/,
   'YYYY-MM-D': /^\d{4}-\d{2}-\d{1}$/,
 
+  'YYYY/MM/DD HH:mm:ss': /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/, // '2023/10/18 00:00:00'
+  'YYYY/M/DD HH:mm:ss': /^\d{4}\/\d{1}\/\d{2} \d{2}:\d{2}:\d{2}$/, // '2023/1/5 00:00:00'
+  'YYYY/MM/D HH:mm:ss': /^\d{4}\/\d{2}\/\d{1} \d{2}:\d{2}:\d{2}$/, // '2023/10/5 00:00:00'
+  'YYYY/M/D HH:mm:ss': /^\d{4}\/\d{1}\/\d{1} \d{2}:\d{2}:\d{2}$/, // '2023/1/5 00:00:00'
   'YYYY-MM-DD HH:mm:ss': /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/, // '2023-10-18 00:00:00'
   'MMM D, YYYY': /^[a-zA-Z]{3,5} \d{1,2}, \d{4}$/, // MAY 5, 2023
   'MMMM D, YYYY': /^[a-zA-Z]{6,} \d{1,2}, \d{4}$/, // December 5, 2023
   'YYYY-MM-DDTHH:mm:ssZ': /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/, // 2024-02-24T13:01:01Z
+  'YYYY-MM-DD HH:mm:ss.SSSSSSS': /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$/, // SQL timestamp with fractional seconds, 2025-10-07 03:40:50.8526802
+};
+
+export const updateDateFormatRegexes = (newFormats) => {
+  Object.assign(dateFormatRegexes, newFormats);
+  return dateFormatRegexes;
 };
 
 export const momentValidate = (date, finalFormat = '') => {
@@ -91,7 +101,17 @@ export const getLocalDate = (date, format = '') => {
   return momentValidate(d, format);
 };
 
-export const timePastDate = curry((timeType, older, newer): number =>
+export type TimeType =
+  | 'milliseconds'
+  | 'seconds'
+  | 'minutes'
+  | 'hours'
+  | 'days'
+  | 'weeks'
+  | 'months'
+  | 'years';
+
+export const timePastDate = curry((timeType: TimeType, older, newer): number =>
   getUTCDate(newer).diff(getUTCDate(older), timeType),
 );
 
@@ -108,7 +128,7 @@ export const hoursPastDate = (date: Date, oldDate = new Date()): number => {
 };
 
 export const timePastDateExcludeWeekend = (
-  timeType: string,
+  timeType: TimeType,
   older: Date | string,
   newer: Date | string = new Date(),
 ) => {

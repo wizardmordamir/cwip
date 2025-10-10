@@ -1,5 +1,5 @@
-import { getMessageFromError } from './objects';
-import { safeStringify } from './safeStringify';
+import { getMessageFromError } from '../../objects';
+import { safeStringify } from '../safeStringify';
 
 export type LoggerLevel = 'info' | 'debug' | 'trace' | 'warn' | 'error';
 

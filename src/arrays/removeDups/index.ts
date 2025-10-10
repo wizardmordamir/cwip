@@ -1,4 +1,4 @@
-import { safeStringify } from '../../safeStringify';
+import { safeStringify } from '../../helpers/safeStringify';
 
 export const removeDups = <T>(arr: T[]): T[] => {
   return arr.filter(

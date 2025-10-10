@@ -1,6 +1,6 @@
-import { hoursPastDate } from './times';
-import { isString } from './js-types';
-import { stringify } from './objects';
+import { hoursPastDate } from '../times';
+import { isString } from '../../js-types';
+import { stringify } from '../../objects';
 
 type Obj = Record<string, any>;
 

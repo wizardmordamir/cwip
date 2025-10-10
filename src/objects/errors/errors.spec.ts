@@ -1,10 +1,10 @@
 import { jest } from '@jest/globals';
-import { shouldLogMessage } from '../../logging';
+import { shouldLogMessage } from '../../helpers';
 
 import { removeModulesFromStack, showStackForError, isNetworkError, getMessageFromError } from '.';
 
-jest.mock('../../logging', () => ({
-  ...(jest.requireActual('../../logging') as object),
+jest.mock('../../helpers/logging', () => ({
+  ...(jest.requireActual('../../helpers/logging') as object),
   shouldLogMessage: jest.fn(),
 }));
 

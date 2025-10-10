@@ -1,0 +1,1 @@
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../src/helpers/convertEncoding/index.ts"],"names":[],"mappings":"AAAA,eAAO,MAAM,QAAQ,GAAI,OAAO,MAAM,KAAG,OAOxC,CAAC;AAEF,eAAO,MAAM,eAAe,GAC1B,OAAO,MAAM,EACb,cAAc,cAAc,EAC5B,YAAY,cAAc,KACzB,MAA+D,CAAC;AAEnE,eAAO,MAAM,QAAQ,GAAI,OAAO,MAAM,KAAG,MAAmD,CAAC;AAC7F,eAAO,MAAM,UAAU,GAAI,OAAO,MAAM,KAAG,MAAmD,CAAC"}

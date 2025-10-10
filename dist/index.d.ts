@@ -2,14 +2,12 @@ export * from './arrays';
 export * from './functional';
 export * from './helpers';
 export * from './js-types';
-export * from './logger';
-export * from './logging';
+export * from './helpers/logging';
 export * from './math';
 export * from './objects';
 export * from './pipes';
 export * from './reg';
-export * from './safeStringify';
 export * from './strings';
-export * from './times';
+export * from './helpers/times';
 export * from './ts-types';
 //# sourceMappingURL=index.d.ts.map

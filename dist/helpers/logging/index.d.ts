@@ -12,4 +12,4 @@ export declare const cleanStringForLogging: (str: string, env: Obj) => string;
 export declare const cleanDataForLogging: (opts: any, env: Obj) => any;
 export declare const shouldLogMessage: (message: any, group?: string) => boolean;
 export {};
-//# sourceMappingURL=logging.d.ts.map
+//# sourceMappingURL=index.d.ts.map

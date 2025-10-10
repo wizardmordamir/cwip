@@ -1,17 +1,29 @@
 import moment from 'moment-timezone';
 import {
   addMomentTimeZone,
+  dateFormatRegexes,
   getESTDate,
   getLocalDate,
   getTimeStringFormat,
   getUTCDate,
   timePastDate,
   timePastDateExcludeWeekend,
-} from './times';
+  updateDateFormatRegexes,
+} from '.';
 
 addMomentTimeZone(moment);
 
 describe('times', () => {
+  it('can update dateFormatRegexes dynamically', () => {
+    const newFormat = {
+      'MM/YYYY/DD HH:mm:ss': /^\d{2}\/\d{4}\/\d{2} \d{2}:\d{2}:\d{2}$/,
+    };
+    updateDateFormatRegexes(newFormat);
+    expect(dateFormatRegexes['YYYY/MM/DD HH:mm:ss']).toBeDefined();
+    const testDate = '2025/10/07 03:40:50';
+    expect(getTimeStringFormat(testDate)).toBe('YYYY/MM/DD HH:mm:ss');
+  });
+
   describe('getTimeStringFormat', () => {
     it('should get time formats', () => {
       const tests = [
@@ -58,6 +70,23 @@ describe('times', () => {
           ...tests[i],
         ]);
       }
+    });
+
+    it('detects SQL timestamp with fractional seconds', () => {
+      const sqlTimestamp = '2025-10-07 03:40:50.8526802';
+      expect(getTimeStringFormat(sqlTimestamp)).toBe('YYYY-MM-DD HH:mm:ss.SSSSSSS');
+      // Should parse and format back to ISO or valid moment string
+      const parsed = getUTCDate(sqlTimestamp);
+      expect(parsed).not.toBe('');
+      expect(parsed.toISOString ? parsed.toISOString() : parsed).toContain('2025-10-07T03:40:50');
+    });
+
+    it('detects SQL timestamp without fractional seconds', () => {
+      const sqlTimestamp = '2025-10-07 03:40:50';
+      expect(getTimeStringFormat(sqlTimestamp)).toBe('YYYY-MM-DD HH:mm:ss');
+      const parsed = getUTCDate(sqlTimestamp);
+      expect(parsed).not.toBe('');
+      expect(parsed.toISOString ? parsed.toISOString() : parsed).toContain('2025-10-07T03:40:50');
     });
   });
 

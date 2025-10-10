@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { logger, LoggerConfig, updateLoggerConfig } from './logger';
+import { logger, LoggerConfig, updateLoggerConfig } from '.';
 
 const getConsoleSpy = () => jest.spyOn(console, 'log');
 
@@ -45,7 +45,7 @@ describe('logger', () => {
     const consoleSpyCalledWith = consoleSpy.mock.calls[0].join(' ');
 
     const consoleSpyRegex = new RegExp(
-      `\\[ERROR\\].+${escapeForRegex(mockISOStringParsed)} /src/logger.spec.ts:[0-9]{1,4} test`,
+      `\\[ERROR\\].+${escapeForRegex(mockISOStringParsed)} /logger/logger.spec.ts:[0-9]{1,4} test`,
     );
 
     expect([consoleSpyCalledWith, consoleSpyRegex.test(consoleSpyCalledWith)]).toEqual([

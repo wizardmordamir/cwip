@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.logger = exports.getFileDetails = exports.updateLoggerConfig = void 0;
-const objects_1 = require("./objects");
-const safeStringify_1 = require("./safeStringify");
+const objects_1 = require("../../objects");
+const safeStringify_1 = require("../safeStringify");
 const validLevels = ['trace', 'debug', 'info', 'warn', 'error'];
 const loggerConfig = {
     level: 'info',

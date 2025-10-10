@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.safeStringifyIfNeeded = exports.safeStringify = void 0;
-const js_types_1 = require("./js-types");
+const js_types_1 = require("../../js-types");
 const safeTypes = ['boolean', 'number'];
 function decycle(obj, seen = new WeakSet()) {
     if (typeof obj === 'undefined' || obj === null || safeTypes.includes(typeof obj)) {

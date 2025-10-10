@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.shouldLogMessage = exports.cleanDataForLogging = exports.cleanStringForLogging = exports.updateLoggingSettings = exports.loggingSettings = void 0;
-const times_1 = require("./times");
-const js_types_1 = require("./js-types");
-const objects_1 = require("./objects");
+const times_1 = require("../times");
+const js_types_1 = require("../../js-types");
+const objects_1 = require("../../objects");
 exports.loggingSettings = {
     disableSameMessagesLimit: false,
     redactionText: 'HIDDEN',

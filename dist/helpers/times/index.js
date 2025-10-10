@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.timePastDateExcludeWeekend = exports.hoursPastDate = exports.daysPastDateMoment = exports.hoursPastDateMoment = exports.minutesPastDateMoment = exports.timePastDate = exports.getLocalDate = exports.getESTDate = exports.getUTCDate = exports.getTimeStringFormat = exports.momentValidate = exports.dateFormatRegexes = exports.dbTimeFormat = exports.addMomentTimeZone = void 0;
+exports.timePastDateExcludeWeekend = exports.hoursPastDate = exports.daysPastDateMoment = exports.hoursPastDateMoment = exports.minutesPastDateMoment = exports.timePastDate = exports.getLocalDate = exports.getESTDate = exports.getUTCDate = exports.getTimeStringFormat = exports.momentValidate = exports.updateDateFormatRegexes = exports.dateFormatRegexes = exports.dbTimeFormat = exports.addMomentTimeZone = void 0;
 /*
   Many of these functions require moment timezone injected
 */
-const functional_1 = require("./functional");
-const js_types_1 = require("./js-types");
+const functional_1 = require("../../functional");
+const js_types_1 = require("../../js-types");
 let moment;
 const addMomentTimeZone = (momentTimezone, defaultTZ = 'Etc/UTC') => {
     moment = momentTimezone;
@@ -39,11 +39,21 @@ exports.dateFormatRegexes = {
     'YYYY-MM-DD': /^\d{4}-\d{2}-\d{2}$/,
     'YYYY-M-DD': /^\d{4}-\d{1}-\d{2}$/,
     'YYYY-MM-D': /^\d{4}-\d{2}-\d{1}$/,
+    'YYYY/MM/DD HH:mm:ss': /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/, // '2023/10/18 00:00:00'
+    'YYYY/M/DD HH:mm:ss': /^\d{4}\/\d{1}\/\d{2} \d{2}:\d{2}:\d{2}$/, // '2023/1/5 00:00:00'
+    'YYYY/MM/D HH:mm:ss': /^\d{4}\/\d{2}\/\d{1} \d{2}:\d{2}:\d{2}$/, // '2023/10/5 00:00:00'
+    'YYYY/M/D HH:mm:ss': /^\d{4}\/\d{1}\/\d{1} \d{2}:\d{2}:\d{2}$/, // '2023/1/5 00:00:00'
     'YYYY-MM-DD HH:mm:ss': /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/, // '2023-10-18 00:00:00'
     'MMM D, YYYY': /^[a-zA-Z]{3,5} \d{1,2}, \d{4}$/, // MAY 5, 2023
     'MMMM D, YYYY': /^[a-zA-Z]{6,} \d{1,2}, \d{4}$/, // December 5, 2023
     'YYYY-MM-DDTHH:mm:ssZ': /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/, // 2024-02-24T13:01:01Z
+    'YYYY-MM-DD HH:mm:ss.SSSSSSS': /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$/, // SQL timestamp with fractional seconds, 2025-10-07 03:40:50.8526802
 };
+const updateDateFormatRegexes = (newFormats) => {
+    Object.assign(exports.dateFormatRegexes, newFormats);
+    return exports.dateFormatRegexes;
+};
+exports.updateDateFormatRegexes = updateDateFormatRegexes;
 const momentValidate = (date, finalFormat = '') => {
     let mom;
     if (!moment.isMoment(date)) {

@@ -17,4 +17,4 @@ export declare const logger: {
     error: (...args: any) => void;
     warn: (...args: any) => void;
 };
-//# sourceMappingURL=logger.d.ts.map
+//# sourceMappingURL=index.d.ts.map

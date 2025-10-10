@@ -1,4 +1,4 @@
-import { safeStringify, safeStringifyIfNeeded } from './safeStringify';
+import { safeStringify, safeStringifyIfNeeded } from '.';
 
 describe('safeStringify', () => {
   it('stringifies primitives', () => {

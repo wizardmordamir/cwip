@@ -1,4 +1,4 @@
-import { isString } from './js-types';
+import { isString } from '../../js-types';
 
 const safeTypes = ['boolean', 'number'];
 
