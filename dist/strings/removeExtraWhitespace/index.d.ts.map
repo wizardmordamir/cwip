@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../src/strings/removeExtraWhitespace/index.ts"],"names":[],"mappings":"AAEA,eAAO,MAAM,qBAAqB,GAAI,OAAO,MAAM,KAAG,MAGrD,CAAC"}
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../src/strings/removeExtraWhitespace/index.ts"],"names":[],"mappings":"AAEA,eAAO,MAAM,qBAAqB,GAAI,OAAO,MAAM,KAAG,MAGrD,CAAC;AAEF,eAAO,MAAM,kBAAkB,GAAI,OAAO,MAAM,KAAG,OAGlD,CAAC"}

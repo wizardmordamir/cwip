@@ -24,7 +24,6 @@ describe('safeStringify', () => {
 
   it('handles RegExp objects', () => {
     const regex = /abc/gi;
-    console.log('********* regex:', safeStringify({ regex }));
     expect(safeStringify({ regex })).toBe('{"regex":"/abc/gi"}');
   });
 

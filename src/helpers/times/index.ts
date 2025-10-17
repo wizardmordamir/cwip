@@ -164,3 +164,16 @@ export const timePastDateExcludeWeekend = (
 
   return timePast;
 };
+
+export const momentOrDateToISOString = (date: any): string => {
+  if (isString(date)) {
+    return date;
+  }
+  if (!date) {
+    return '';
+  }
+  if (moment?.isMoment(date)) {
+    return date.toISOString();
+  }
+  return date.toISOString?.();
+};

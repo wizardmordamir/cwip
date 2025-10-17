@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.timePastDateExcludeWeekend = exports.hoursPastDate = exports.daysPastDateMoment = exports.hoursPastDateMoment = exports.minutesPastDateMoment = exports.timePastDate = exports.getLocalDate = exports.getESTDate = exports.getUTCDate = exports.getTimeStringFormat = exports.momentValidate = exports.updateDateFormatRegexes = exports.dateFormatRegexes = exports.dbTimeFormat = exports.addMomentTimeZone = void 0;
+exports.momentOrDateToISOString = exports.timePastDateExcludeWeekend = exports.hoursPastDate = exports.daysPastDateMoment = exports.hoursPastDateMoment = exports.minutesPastDateMoment = exports.timePastDate = exports.getLocalDate = exports.getESTDate = exports.getUTCDate = exports.getTimeStringFormat = exports.momentValidate = exports.updateDateFormatRegexes = exports.dateFormatRegexes = exports.dbTimeFormat = exports.addMomentTimeZone = void 0;
 /*
   Many of these functions require moment timezone injected
 */
@@ -140,3 +140,16 @@ const timePastDateExcludeWeekend = (timeType, older, newer = new Date()) => {
     return timePast;
 };
 exports.timePastDateExcludeWeekend = timePastDateExcludeWeekend;
+const momentOrDateToISOString = (date) => {
+    if ((0, js_types_1.isString)(date)) {
+        return date;
+    }
+    if (!date) {
+        return '';
+    }
+    if (moment?.isMoment(date)) {
+        return date.toISOString();
+    }
+    return date.toISOString?.();
+};
+exports.momentOrDateToISOString = momentOrDateToISOString;

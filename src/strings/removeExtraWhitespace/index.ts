@@ -4,3 +4,8 @@ export const removeExtraWhitespace = (value: string): string => {
   if (typeof value !== 'string') return value;
   return value.replace(/\s+/g, ' ').trim();
 };
+
+export const containsWhitespace = (value: string): boolean => {
+  if (typeof value !== 'string') return false;
+  return /\s/.test(value);
+};

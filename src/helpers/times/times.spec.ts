@@ -6,6 +6,7 @@ import {
   getLocalDate,
   getTimeStringFormat,
   getUTCDate,
+  momentOrDateToISOString,
   timePastDate,
   timePastDateExcludeWeekend,
   updateDateFormatRegexes,
@@ -22,6 +23,37 @@ describe('times', () => {
     expect(dateFormatRegexes['YYYY/MM/DD HH:mm:ss']).toBeDefined();
     const testDate = '2025/10/07 03:40:50';
     expect(getTimeStringFormat(testDate)).toBe('YYYY/MM/DD HH:mm:ss');
+  });
+
+  describe('momentOrDateToISOString', () => {
+    it('should convert a moment object to ISO string', () => {
+      const m = moment.utc('2024-02-23T13:01:01Z');
+      expect(momentOrDateToISOString(m)).toBe('2024-02-23T13:01:01.000Z');
+    });
+
+    it('should convert a Date object to ISO string', () => {
+      const d = new Date('2024-02-23T13:01:01Z');
+      expect(momentOrDateToISOString(d)).toBe('2024-02-23T13:01:01.000Z');
+    });
+
+    it('should handle null and undefined', () => {
+      expect(momentOrDateToISOString(null as any)).toBe('');
+      expect(momentOrDateToISOString(undefined as any)).toBe('');
+    });
+
+    it('should handle empty string', () => {
+      expect(momentOrDateToISOString('')).toBe('');
+    });
+
+    it('should handle already ISO string', () => {
+      const iso = '2024-02-23T13:01:01.000Z';
+      expect(momentOrDateToISOString(iso)).toBe('2024-02-23T13:01:01.000Z');
+    });
+
+    it('should handle moment object with local timezone', () => {
+      const m = moment('2024-02-23T13:01:01');
+      expect(momentOrDateToISOString(m)).toMatch(/2024-02-23T13:01:01/);
+    });
   });
 
   describe('getTimeStringFormat', () => {

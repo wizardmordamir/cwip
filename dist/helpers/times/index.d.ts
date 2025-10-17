@@ -78,4 +78,5 @@ export declare const hoursPastDateMoment: import("../../functional/typescriptUti
 export declare const daysPastDateMoment: import("../../functional/typescriptUtils").Curry<[older: any, newer: any], number>;
 export declare const hoursPastDate: (date: Date, oldDate?: Date) => number;
 export declare const timePastDateExcludeWeekend: (timeType: TimeType, older: Date | string, newer?: Date | string) => number;
+export declare const momentOrDateToISOString: (date: any) => string;
 //# sourceMappingURL=index.d.ts.map
