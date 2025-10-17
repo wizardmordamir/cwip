@@ -47,5 +47,6 @@ var shallowClone_1 = require("./shallowClone");
 Object.defineProperty(exports, "shallowClone", { enumerable: true, get: function () { return shallowClone_1.shallowClone; } });
 var stringify_1 = require("./stringify");
 Object.defineProperty(exports, "stringify", { enumerable: true, get: function () { return stringify_1.stringify; } });
+__exportStar(require("./verifyKeysExist"), exports);
 var withoutKeys_1 = require("./withoutKeys");
 Object.defineProperty(exports, "withoutKeys", { enumerable: true, get: function () { return withoutKeys_1.withoutKeys; } });

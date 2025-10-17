@@ -15,4 +15,5 @@ export { objHasKey } from './objHasKey';
 export { removeKeysMutate } from './removeKeysMutate';
 export { shallowClone } from './shallowClone';
 export { stringify } from './stringify';
+export * from './verifyKeysExist';
 export { withoutKeys } from './withoutKeys';
