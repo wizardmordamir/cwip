@@ -1,0 +1,24 @@
+import type { Moment } from 'moment-timezone';
+import type moment from 'moment-timezone';
+export type DateLike = Date | string | Moment;
+export declare const addMomentTimeZone: (momentTimezone: typeof moment, defaultTZ?: string) => void;
+export declare const dateFormatRegexes: Record<string, RegExp>;
+export declare const updateDateFormatRegexes: (newFormats: Record<string, RegExp>) => Record<string, RegExp>;
+export declare function momentValidate(_date: DateLike, _finalFormat?: ''): Moment | '';
+export declare function momentValidate(_date: DateLike, _finalFormat?: string): string;
+export declare const getTimeStringFormat: (dateString: string) => string;
+export declare function getUTCDate(_original?: DateLike, _currentFormat?: string, _format?: ''): Moment;
+export declare function getUTCDate(_original?: DateLike, _currentFormat?: string, _format?: string): string;
+export declare function getESTDate(_date: DateLike, _format?: ''): Moment | '';
+export declare function getESTDate(_date: DateLike, _format?: string): string;
+export declare function getLocalDate(_date: DateLike, _format?: ''): Moment | '';
+export declare function getLocalDate(_date: DateLike, _format?: string): string;
+export type TimeType = 'milliseconds' | 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months' | 'years';
+export declare const timePastDate: import("../../functional/typescriptUtils").Curry<[timeType: TimeType, older: DateLike, newer: DateLike], number>;
+export declare const minutesPastDateMoment: import("../../functional/typescriptUtils").Curry<[older: DateLike, newer: DateLike], number>;
+export declare const hoursPastDateMoment: import("../../functional/typescriptUtils").Curry<[older: DateLike, newer: DateLike], number>;
+export declare const daysPastDateMoment: import("../../functional/typescriptUtils").Curry<[older: DateLike, newer: DateLike], number>;
+export declare const hoursPastDate: (date: Date, oldDate?: Date) => number;
+export declare const timePastDateExcludeWeekend: (timeType: TimeType, older: DateLike, newer?: DateLike) => number;
+export declare const momentOrDateToISOString: (date: DateLike) => string;
+//# sourceMappingURL=momentDependent.d.ts.map

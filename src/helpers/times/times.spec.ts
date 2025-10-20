@@ -27,7 +27,7 @@ describe('times', () => {
 
   describe('momentOrDateToISOString', () => {
     it('should convert a moment object to ISO string', () => {
-      const m = moment.utc('2024-02-23T13:01:01Z');
+      const m: moment.Moment = moment.utc('2024-02-23T13:01:01Z');
       expect(momentOrDateToISOString(m)).toBe('2024-02-23T13:01:01.000Z');
     });
 
@@ -93,7 +93,7 @@ describe('times', () => {
           tests[i][1],
           ...tests[i],
         ]);
-        const mom = moment(tests[i][0], tests[i][1]);
+        const mom: moment.Moment = moment(tests[i][0], tests[i][1]);
         expect([i, mom, moment.isMoment(mom), ...tests[i]]).toEqual([i, mom, true, ...tests[i]]);
         expect([i, mom, mom.toISOString(), ...tests[i]]).toEqual([
           i,
@@ -108,7 +108,7 @@ describe('times', () => {
       const sqlTimestamp = '2025-10-07 03:40:50.8526802';
       expect(getTimeStringFormat(sqlTimestamp)).toBe('YYYY-MM-DD HH:mm:ss.SSSSSSS');
       // Should parse and format back to ISO or valid moment string
-      const parsed = getUTCDate(sqlTimestamp);
+      const parsed: moment.Moment = getUTCDate(sqlTimestamp);
       expect(parsed).not.toBe('');
       expect(parsed.toISOString ? parsed.toISOString() : parsed).toContain('2025-10-07T03:40:50');
     });
@@ -116,7 +116,7 @@ describe('times', () => {
     it('detects SQL timestamp without fractional seconds', () => {
       const sqlTimestamp = '2025-10-07 03:40:50';
       expect(getTimeStringFormat(sqlTimestamp)).toBe('YYYY-MM-DD HH:mm:ss');
-      const parsed = getUTCDate(sqlTimestamp);
+      const parsed: moment.Moment = getUTCDate(sqlTimestamp);
       expect(parsed).not.toBe('');
       expect(parsed.toISOString ? parsed.toISOString() : parsed).toContain('2025-10-07T03:40:50');
     });
@@ -129,7 +129,7 @@ describe('times', () => {
     });
     it('should assume utc when no timezone info in date string', () => {
       const stringDate = '2024-01-11 00:01:00.000';
-      const converted = getUTCDate(stringDate);
+      const converted: moment.Moment = getUTCDate(stringDate);
       expect(converted.utc().format()).toEqual('2024-01-11T00:01:00Z');
       expect(converted.toISOString()).toEqual('2024-01-11T00:01:00.000Z');
     });
@@ -183,61 +183,101 @@ describe('times', () => {
     it('should get time past between two dates with start day before end day', () => {
       const olderDate = '2024-02-19 00:00:00.000'; // Monday
       const newerDate = '2024-02-27 00:00:00.000'; // Tuesday
-      const timePastExcludingWeekends = timePastDateExcludeWeekend('days', olderDate, newerDate);
+      const timePastExcludingWeekends: number = timePastDateExcludeWeekend(
+        'days',
+        olderDate,
+        newerDate,
+      );
       expect(timePastExcludingWeekends).toEqual(6);
     });
     it('should get time past between two dates with start day after end day', () => {
       const olderDate = '2024-02-20 00:00:00.000'; // Tuesday
       const newerDate = '2024-02-26 00:00:00.000'; // Monday
-      const timePastExcludingWeekends = timePastDateExcludeWeekend('days', olderDate, newerDate);
+      const timePastExcludingWeekends: number = timePastDateExcludeWeekend(
+        'days',
+        olderDate,
+        newerDate,
+      );
       expect(timePastExcludingWeekends).toEqual(4);
     });
     it('should get time past minutes between two dates with start day after end day', () => {
       const olderDate = '2024-02-20 00:00:00.000'; // Tuesday
       const newerDate = '2024-02-26 00:00:00.000'; // Monday
-      const timePastExcludingWeekends = timePastDateExcludeWeekend('minutes', olderDate, newerDate);
+      const timePastExcludingWeekends: number = timePastDateExcludeWeekend(
+        'minutes',
+        olderDate,
+        newerDate,
+      );
       expect(timePastExcludingWeekends).toEqual(4 * 24 * 60);
     });
     it('should get time past hours between two dates with start day after end day', () => {
       const olderDate = '2024-02-20 00:00:00.000'; // Tuesday
       const newerDate = '2024-02-26 00:00:00.000'; // Monday
-      const timePastExcludingWeekends = timePastDateExcludeWeekend('hours', olderDate, newerDate);
+      const timePastExcludingWeekends: number = timePastDateExcludeWeekend(
+        'hours',
+        olderDate,
+        newerDate,
+      );
       expect(timePastExcludingWeekends).toEqual(4 * 24);
     });
     it('should get time past between two dates with start day same as end day', () => {
       const olderDate = '2024-02-20 00:00:00.000'; // Tuesday
       const newerDate = '2024-02-27 00:00:00.000'; // Tuesday
-      const timePastExcludingWeekends = timePastDateExcludeWeekend('days', olderDate, newerDate);
+      const timePastExcludingWeekends: number = timePastDateExcludeWeekend(
+        'days',
+        olderDate,
+        newerDate,
+      );
       expect(timePastExcludingWeekends).toEqual(5);
     });
     it('should get time past between two dates with multiple weekends start day before end day', () => {
       const olderDate = '2024-02-01 00:00:00.000'; // Thursday
       const newerDate = '2024-02-23 00:00:00.000'; // Friday
-      const timePastExcludingWeekends = timePastDateExcludeWeekend('days', olderDate, newerDate);
+      const timePastExcludingWeekends: number = timePastDateExcludeWeekend(
+        'days',
+        olderDate,
+        newerDate,
+      );
       expect(timePastExcludingWeekends).toEqual(16);
     });
     it('should get time past between two dates with multiple weekends start day after end day', () => {
       const olderDate = '2024-02-02 00:00:00.000'; // Friday
       const newerDate = '2024-02-22 00:00:00.000'; // Thursday
-      const timePastExcludingWeekends = timePastDateExcludeWeekend('days', olderDate, newerDate);
+      const timePastExcludingWeekends: number = timePastDateExcludeWeekend(
+        'days',
+        olderDate,
+        newerDate,
+      );
       expect(timePastExcludingWeekends).toEqual(14);
     });
     it('should get time past between two dates with multiple weekends start day same as end day', () => {
       const olderDate = '2024-02-01 00:00:00.000'; // Thursday
       const newerDate = '2024-02-22 00:00:00.000'; // Thursday
-      const timePastExcludingWeekends = timePastDateExcludeWeekend('days', olderDate, newerDate);
+      const timePastExcludingWeekends: number = timePastDateExcludeWeekend(
+        'days',
+        olderDate,
+        newerDate,
+      );
       expect(timePastExcludingWeekends).toEqual(15);
     });
     it('should get time past between two dates', () => {
       const olderDate = '2023-01-11 00:00:00.000';
       const newerDate = '2024-01-11 00:00:00.000';
-      const timePastExcludingWeekends = timePastDateExcludeWeekend('days', olderDate, newerDate);
+      const timePastExcludingWeekends: number = timePastDateExcludeWeekend(
+        'days',
+        olderDate,
+        newerDate,
+      );
       expect(timePastExcludingWeekends).toEqual(261);
     });
     it('should get time past between two dates', () => {
       const olderDate = '2023-02-27T23:00:18.637Z';
       const newerDate = '2024-02-27T23:00:18.637Z';
-      const timePastExcludingWeekends = timePastDateExcludeWeekend('days', olderDate, newerDate);
+      const timePastExcludingWeekends: number = timePastDateExcludeWeekend(
+        'days',
+        olderDate,
+        newerDate,
+      );
       expect(timePastExcludingWeekends).toEqual(261);
     });
   });
@@ -246,7 +286,14 @@ describe('times', () => {
     it('should assume utc when no timezone info in date string', () => {
       const stringDate = '2024-01-11 00:01:00.000';
       const converted = getESTDate(stringDate);
-      expect(converted.utc().format()).toEqual('2024-01-11T05:01:00Z');
+      expect(typeof converted === 'string' ? false : converted.toISOString()).toEqual(
+        '2024-01-11T05:01:00.000Z',
+      );
+      if (typeof converted !== 'string') {
+        expect(converted.utc().format()).toEqual('2024-01-11T05:01:00Z');
+      } else {
+        fail('Expected a moment object, but got an empty string');
+      }
       expect(converted.toISOString()).toEqual('2024-01-11T05:01:00.000Z');
     });
   });
@@ -280,7 +327,12 @@ describe('times', () => {
   describe('getLocalDate', () => {
     it('should get local time', () => {
       const dateString = new Date().toISOString();
-      expect(getLocalDate(dateString).format()).toEqual(moment(dateString).format());
+      const result = getLocalDate(dateString);
+      if (typeof result !== 'string') {
+        expect(result.format()).toEqual(moment(dateString).format());
+      } else {
+        fail('Expected a Moment object, but got an empty string');
+      }
     });
   });
 });
