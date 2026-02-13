@@ -37,7 +37,7 @@ describe('isDirectory', () => {
   it('should return true for a directory (async)', async () => {
     jest.doMock('node:fs', () => ({
       promises: {
-        exists: jest.fn(() => Promise.resolve(true)),
+        access: jest.fn(() => Promise.resolve(true)),
       },
     }));
     const { isExistingPath } = await import('./isExistingPath');
@@ -47,7 +47,7 @@ describe('isDirectory', () => {
   it('should return false for a non-directory (async)', async () => {
     jest.doMock('node:fs', () => ({
       promises: {
-        exists: jest.fn(() => Promise.resolve(false)),
+        access: jest.fn(() => Promise.reject(new Error('ENOENT'))),
       },
     }));
     const { isExistingPath } = await import('./isExistingPath');
@@ -57,7 +57,7 @@ describe('isDirectory', () => {
   it('should return false if an error occurs (async)', async () => {
     jest.doMock('node:fs', () => ({
       promises: {
-        exists: jest.fn(() => Promise.reject(new Error('Error'))),
+        access: jest.fn(() => Promise.reject(new Error('Error'))),
       },
     }));
     const { isExistingPath } = await import('./isExistingPath');

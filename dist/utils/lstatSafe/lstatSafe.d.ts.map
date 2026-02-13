@@ -1,0 +1,1 @@
+{"version":3,"file":"lstatSafe.d.ts","sourceRoot":"","sources":["../../../src/utils/lstatSafe/lstatSafe.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,SAAS,CAAC;AAErC,eAAO,MAAM,aAAa,GAAI,MAAM,MAAM,KAAG,KAAK,GAAG,IAEpD,CAAC;AAEF,eAAO,MAAM,SAAS,GAAU,MAAM,MAAM,KAAG,OAAO,CAAC,OAAO,SAAS,EAAE,KAAK,GAAG,IAAI,CAEpF,CAAC"}

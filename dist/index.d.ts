@@ -10,4 +10,5 @@ export * from './reg';
 export * from './strings';
 export * from './helpers/times';
 export * from './ts-types';
+export * from './utils';
 //# sourceMappingURL=index.d.ts.map

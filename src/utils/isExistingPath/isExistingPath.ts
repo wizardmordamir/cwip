@@ -6,5 +6,8 @@ export const isExistingPathSync = (path: string): boolean => {
 };
 
 export const isExistingPath = async (path: string): Promise<boolean> => {
-  return tryOrAsync(() => fs.promises.exists(path), false);
+  return tryOrAsync(async () => {
+    await fs.promises.access(path);
+    return true;
+  }, false);
 };
