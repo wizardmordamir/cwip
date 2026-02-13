@@ -1,7 +1,7 @@
 import { getMessageFromError } from '../../objects';
 import { safeStringify } from '../safeStringify';
 
-export type LoggerLevel = 'info' | 'debug' | 'trace' | 'warn' | 'error';
+export type LoggerLevel = 'info' | 'debug' | 'trace' | 'warn' | 'error' | 'off';
 
 export type LoggerConfig = {
   baseDirectory?: string;
@@ -11,19 +11,33 @@ export type LoggerConfig = {
   stringifyError?: (_error: Error) => string;
   stringifyObject?: (_arg: any) => string;
   timestampFunction?: () => string;
+  toggles?: {
+    skipFileDetails?: boolean;
+    skipTimestamps?: boolean;
+  };
 };
 
-const validLevels: LoggerLevel[] = ['trace', 'debug', 'info', 'warn', 'error'];
+const validLevels: LoggerLevel[] = ['trace', 'debug', 'info', 'warn', 'error', 'off'];
 
 const loggerConfig: LoggerConfig = {
   level: 'info' as LoggerLevel,
   stackDepth: 2, // stack order: [0: getFileDetails, 1: log, 2: logger, 3: callee]
+  toggles: {
+    skipFileDetails: false,
+    skipTimestamps: false,
+  },
 };
+
+export const getLoggerConfig = () => safeStringify(loggerConfig);
 
 export const updateLoggerConfig = (config: Partial<LoggerConfig>) =>
   Object.assign(loggerConfig, config);
 
 export const getFileDetails = (stackDepth?: number) => {
+  if (loggerConfig.toggles.skipFileDetails) {
+    return '';
+  }
+
   const stackTraceArray = new Error().stack?.split('\n').slice(1) || [];
   const stackSection =
     stackTraceArray[Math.min(stackDepth || loggerConfig.stackDepth, stackTraceArray.length - 1)] ||
@@ -85,9 +99,12 @@ const log =
   (level: LoggerLevel) =>
   (...args: any) => {
     if (validLevels.indexOf(level) >= validLevels.indexOf(loggerConfig.level)) {
-      const timestamp = loggerConfig.timestampFunction
-        ? loggerConfig.timestampFunction()
-        : makeDefaultTimeStamp();
+      const timestamp = loggerConfig.toggles.skipTimestamps
+        ? ''
+        : loggerConfig.timestampFunction
+          ? loggerConfig.timestampFunction()
+          : makeDefaultTimeStamp();
+
       console.log(
         `${colors[level]}[${level.toUpperCase()}]\x1b[0m${padWithMaxLevelLength(' ', level)}${timestamp} ${getFileDetails()}`,
         stringifyObjects(args).join(' '),
@@ -96,9 +113,9 @@ const log =
   };
 
 export const logger = {
-  trace: log('trace'),
   debug: log('debug'),
-  info: log('info'),
   error: log('error'),
+  info: log('info'),
+  trace: log('trace'),
   warn: log('warn'),
 };

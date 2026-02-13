@@ -1,16 +1,25 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logger = exports.getFileDetails = exports.updateLoggerConfig = void 0;
+exports.logger = exports.getFileDetails = exports.updateLoggerConfig = exports.getLoggerConfig = void 0;
 const objects_1 = require("../../objects");
 const safeStringify_1 = require("../safeStringify");
-const validLevels = ['trace', 'debug', 'info', 'warn', 'error'];
+const validLevels = ['trace', 'debug', 'info', 'warn', 'error', 'off'];
 const loggerConfig = {
     level: 'info',
     stackDepth: 2, // stack order: [0: getFileDetails, 1: log, 2: logger, 3: callee]
+    toggles: {
+        skipFileDetails: false,
+        skipTimestamps: false,
+    },
 };
+const getLoggerConfig = () => (0, safeStringify_1.safeStringify)(loggerConfig);
+exports.getLoggerConfig = getLoggerConfig;
 const updateLoggerConfig = (config) => Object.assign(loggerConfig, config);
 exports.updateLoggerConfig = updateLoggerConfig;
 const getFileDetails = (stackDepth) => {
+    if (loggerConfig.toggles.skipFileDetails) {
+        return '';
+    }
     const stackTraceArray = new Error().stack?.split('\n').slice(1) || [];
     const stackSection = stackTraceArray[Math.min(stackDepth || loggerConfig.stackDepth, stackTraceArray.length - 1)] ||
         '';
@@ -63,16 +72,18 @@ const stringifyObjects = (args) => {
 };
 const log = (level) => (...args) => {
     if (validLevels.indexOf(level) >= validLevels.indexOf(loggerConfig.level)) {
-        const timestamp = loggerConfig.timestampFunction
-            ? loggerConfig.timestampFunction()
-            : makeDefaultTimeStamp();
+        const timestamp = loggerConfig.toggles.skipTimestamps
+            ? ''
+            : loggerConfig.timestampFunction
+                ? loggerConfig.timestampFunction()
+                : makeDefaultTimeStamp();
         console.log(`${colors[level]}[${level.toUpperCase()}]\x1b[0m${padWithMaxLevelLength(' ', level)}${timestamp} ${(0, exports.getFileDetails)()}`, stringifyObjects(args).join(' '));
     }
 };
 exports.logger = {
-    trace: log('trace'),
     debug: log('debug'),
-    info: log('info'),
     error: log('error'),
+    info: log('info'),
+    trace: log('trace'),
     warn: log('warn'),
 };

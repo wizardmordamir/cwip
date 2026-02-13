@@ -1,9 +1,9 @@
 /* eslint-disable */
-import { logger, LoggerConfig, updateLoggerConfig } from '.';
+import { getLoggerConfig, logger, LoggerConfig, updateLoggerConfig } from '.';
 
 const getConsoleSpy = () => jest.spyOn(console, 'log');
 
-const escapeForRegex = (str) => {
+const escapeForRegex = (str: string) => {
   if (!/[.*+?^${}()|[\]\\]/.test(str)) {
     return str;
   }
@@ -22,6 +22,26 @@ describe('logger', () => {
   afterEach(() => {
     jest.restoreAllMocks();
     updateLoggerConfig(loggerConfig);
+  });
+
+  it('should get logger config', () => {
+    expect(getLoggerConfig()).toEqual(
+      JSON.stringify({
+        level: 'info',
+        stackDepth: 2,
+        toggles: {
+          skipFileDetails: false,
+          skipTimestamps: false,
+        },
+      }),
+    );
+  });
+
+  it('should not log if level is off', () => {
+    const consoleSpy = getConsoleSpy();
+    updateLoggerConfig({ level: 'off' });
+    logger.info('test');
+    expect(consoleSpy).toHaveBeenCalledTimes(0);
   });
 
   it('should log info', async () => {
