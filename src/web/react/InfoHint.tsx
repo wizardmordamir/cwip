@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { resolveClass, resolveStyle, type StyleableProps } from './styling';
 
 /** The styleable slots: wrapper, the icon button, the popover panel, its heading. */
@@ -12,6 +12,8 @@ export interface InfoHintProps extends StyleableProps<InfoHintSlot> {
   /**
    * Which edge of the icon the panel hangs from. Use `'right'` for fields near
    * the right of a layout so the panel doesn't overflow. Default `'left'`.
+   * Auto-positioning will still clamp the panel within the viewport regardless
+   * of this setting, so manual override is rarely needed.
    */
   align?: 'left' | 'right';
   /** Shortcut for `classNames.root`. */
@@ -57,6 +59,9 @@ const TITLE_CLASS = 'mb-1 block font-semibold text-gray-900 dark:text-gray-100';
  * document itself with real formatting. Tailwind-first, overridable per slot
  * (`root`, `icon`, `panel`, `title`) via `classNames`/`styles`/`unstyled`.
  *
+ * The panel auto-clamps to the viewport — no manual `align` fiddling needed for
+ * mobile or narrow containers.
+ *
  *   <label>
  *     Env key <InfoHint title="Env key">Maps to the server <code>QB_&lt;KEY&gt;_PASSWORD</code> var.</InfoHint>
  *     <input … />
@@ -75,6 +80,9 @@ export const InfoHint = ({
   const [hovering, setHovering] = useState(false);
   const [pinned, setPinned] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
+  const panelRef = useRef<HTMLSpanElement>(null);
+  // translateX offsets the panel to keep it within the viewport.
+  const [translateX, setTranslateX] = useState(0);
   const id = useId();
   const open = hovering || pinned;
 
@@ -96,6 +104,24 @@ export const InfoHint = ({
       document.removeEventListener('keydown', onKey);
     };
   }, [pinned]);
+
+  // After the panel renders, measure it and apply a translateX to keep it within
+  // the viewport. Runs synchronously before paint (no flicker).
+  useLayoutEffect(() => {
+    if (!open || !panelRef.current) {
+      setTranslateX(0);
+      return;
+    }
+    const rect = panelRef.current.getBoundingClientRect();
+    const pad = 8;
+    if (rect.right > window.innerWidth - pad) {
+      setTranslateX(-(rect.right - (window.innerWidth - pad)));
+    } else if (rect.left < pad) {
+      setTranslateX(pad - rect.left);
+    } else {
+      setTranslateX(0);
+    }
+  }, [open]);
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: hover-only convenience around the real control (the button below); keyboard users get the same panel via the button's focus/blur handlers.
@@ -139,10 +165,18 @@ export const InfoHint = ({
       </button>
       {open && (
         <span
+          ref={panelRef}
           role="tooltip"
           id={id}
           className={resolveClass(PANEL_CLASS, classNames?.panel, unstyled)}
-          style={resolveStyle(panelStyle(align), styles?.panel, unstyled)}
+          style={resolveStyle(
+            {
+              ...panelStyle(align),
+              ...(translateX !== 0 ? { transform: `translateX(${translateX}px)` } : {}),
+            },
+            styles?.panel,
+            unstyled,
+          )}
         >
           {title && (
             <span
