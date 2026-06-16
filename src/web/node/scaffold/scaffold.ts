@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { applyManagedBlock } from './managedBlock';
 import { mergeManagedKeys } from './mergeManagedKeys';
-import { FILE_TEMPLATES, PACKAGE_SCRIPTS, type ScaffoldOptions } from './templates';
+import { FILE_TEMPLATES, PACKAGE_SCRIPTS, rubatoAppTemplates, type ScaffoldOptions } from './templates';
 
 export interface ScaffoldChange {
   file: string;
@@ -66,6 +66,34 @@ export const scaffoldProject = async (
     action: changedScripts.length ? 'updated' : 'skipped',
     detail: changedScripts.length ? `scripts: ${changedScripts.join(', ')}` : 'scripts already current',
   });
+  return changes;
+};
+
+/**
+ * Scaffold a standalone rubato "friend" mini-app. Writes all the boilerplate for
+ * a rubato-plugin consumer app (server.ts, root package.json, ui/ skeleton).
+ * Skips files that already exist unless `force`. Returns a per-file change list.
+ *
+ * The `name` option (defaults to the directory basename) is interpolated into
+ * package.json, index.html, and the server entry.
+ */
+export const scaffoldRubatoApp = async (
+  dir: string,
+  options: ScaffoldOptions & { force?: boolean } = {},
+): Promise<ScaffoldChange[]> => {
+  const { basename } = await import('node:path');
+  const name = options.name ?? basename(dir);
+  const templates = rubatoAppTemplates(name);
+  const changes: ScaffoldChange[] = [];
+  for (const [rel, content] of Object.entries(templates)) {
+    const target = join(dir, rel);
+    if (!options.force && (await exists(target))) {
+      changes.push({ file: rel, action: 'skipped', detail: 'already exists' });
+      continue;
+    }
+    await writeFileEnsuringDir(target, content);
+    changes.push({ file: rel, action: 'created' });
+  }
   return changes;
 };
 
