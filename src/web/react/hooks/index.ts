@@ -4,6 +4,7 @@
 // (`paginationRange`, `compareSortValues`, `computeReorder`).
 export * from './createLocalStorageViewStore';
 export * from './useAutoSizeTextarea';
+export * from './useCopyToClipboard';
 export * from './useCrossContainerDrag';
 export * from './useDebouncedValue';
 export * from './useDiscardGuard';

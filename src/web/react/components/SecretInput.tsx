@@ -1,4 +1,5 @@
 import { type CSSProperties, useState } from 'react';
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard';
 import { resolveClass, resolveStyle, type StyleableProps } from '../styling';
 
 // Tiny self-contained icons so the component carries no icon dependency.
@@ -79,21 +80,16 @@ export const SecretInput = ({
   unstyled,
 }: SecretInputProps) => {
   const [internalShown, setInternalShown] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
   const shown = reveal !== undefined ? reveal : internalShown;
   const readOnly = !onChange;
 
   const toggle = () => (onToggleReveal ? onToggleReveal() : setInternalShown((s) => !s));
 
-  const copy = async () => {
-    try {
-      await navigator.clipboard?.writeText(value);
-      setCopied(true);
-      onCopied?.(value);
-      setTimeout(() => setCopied(false), 1200);
-    } catch {
-      /* clipboard unavailable — no-op */
-    }
+  const handleCopy = () => {
+    void copy(value).then((ok) => {
+      if (ok) onCopied?.(value);
+    });
   };
 
   return (
@@ -139,7 +135,7 @@ export const SecretInput = ({
           type="button"
           aria-label={`Copy ${label}`}
           title="Copy"
-          onClick={copy}
+          onClick={handleCopy}
           className={resolveClass(BTN_CLASS, classNames?.button, unstyled)}
         >
           {copied ? <Check /> : <Copy />}

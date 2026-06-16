@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
+  CopyButton,
   cx,
   ErrorBoundary,
   InfoHint,
@@ -147,6 +148,31 @@ describe('Toast', () => {
     expect(html).not.toContain('shadow-md');
   });
 
+  it('renders a copy button for a string message and wraps long unbroken text', () => {
+    const html = renderToStaticMarkup(
+      <Toast toast={{ id: '1', message: 'https://example.com/api/x?y=1 — 400 Bad Request' }} onDismiss={() => {}} />,
+    );
+    expect(html).toContain('aria-label="Copy message"');
+    expect(html).toContain('break-words'); // long strings wrap instead of overflowing
+    expect(html).toContain('min-w-0'); // message can shrink below content width
+  });
+
+  it('omits the copy button for a non-string message and when showCopy is false', () => {
+    const nonString = renderToStaticMarkup(<Toast toast={{ id: '1', message: <b>rich</b> }} onDismiss={() => {}} />);
+    expect(nonString).not.toContain('Copy message');
+    const optedOut = renderToStaticMarkup(
+      <Toast toast={{ id: '1', message: 'plain' }} onDismiss={() => {}} showCopy={false} />,
+    );
+    expect(optedOut).not.toContain('Copy message');
+  });
+
+  it('copies copyText when provided even for a rich message', () => {
+    const html = renderToStaticMarkup(
+      <Toast toast={{ id: '1', message: <b>rich</b>, copyText: 'the raw error' }} onDismiss={() => {}} />,
+    );
+    expect(html).toContain('aria-label="Copy message"');
+  });
+
   it('ToastList renders every toast', () => {
     const html = renderToStaticMarkup(
       <ToastList
@@ -159,6 +185,50 @@ describe('Toast', () => {
     );
     expect(html).toContain('one');
     expect(html).toContain('two');
+  });
+});
+
+describe('CopyButton', () => {
+  it('renders a labeled copy button (aria + native title) with no tooltip wrapper by default', () => {
+    const html = renderToStaticMarkup(<CopyButton text="hello" />);
+    expect(html).toContain('aria-label="Copy to clipboard"');
+    expect(html).toContain('title="Copy to clipboard"');
+    expect(html).toContain('<svg'); // the copy icon
+    expect(html).not.toContain('role="tooltip"'); // closed/native by default
+  });
+
+  it('drops the native title and wraps in a styled tooltip trigger when tooltip is set', () => {
+    const html = renderToStaticMarkup(<CopyButton text="hello" tooltip="Copy it" />);
+    expect(html).toContain('aria-label="Copy to clipboard"');
+    expect(html).not.toContain('title="Copy to clipboard"');
+  });
+
+  it('unstyled drops the default button classes', () => {
+    const html = renderToStaticMarkup(<CopyButton text="hello" unstyled classNames={{ root: 'only-this' }} />);
+    expect(html).toContain('class="only-this"');
+    expect(html).not.toContain('cursor-pointer');
+  });
+
+  it('renders a visible label alongside the icon', () => {
+    const html = renderToStaticMarkup(<CopyButton text="hello">Copy code</CopyButton>);
+    expect(html).toContain('Copy code');
+    expect(html).toContain('<svg'); // icon still present by default
+  });
+
+  it('showIcon=false drops the icon for a text-only button', () => {
+    const html = renderToStaticMarkup(
+      <CopyButton text="hello" showIcon={false}>
+        Copy
+      </CopyButton>,
+    );
+    expect(html).toContain('Copy');
+    expect(html).not.toContain('<svg');
+  });
+
+  it('accepts a custom copy icon in place of the default', () => {
+    const html = renderToStaticMarkup(<CopyButton text="hello" copyIcon={<i className="my-icon" />} />);
+    expect(html).toContain('my-icon');
+    expect(html).not.toContain('<svg'); // default icon replaced
   });
 });
 

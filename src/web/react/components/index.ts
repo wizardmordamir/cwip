@@ -12,6 +12,7 @@ export * from './badgeTones';
 export * from './Card';
 export * from './Checkbox';
 export * from './ConfirmDialog';
+export * from './CopyButton';
 export * from './DiscardConfirmOverlay';
 export * from './DismissButton';
 export * from './DragHandle';
