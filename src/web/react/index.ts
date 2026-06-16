@@ -48,6 +48,7 @@ export * from './hooks';
 export * from './InfoHint';
 export * from './layout';
 export * from './nav';
+export * from './ScrollToTopButton';
 export * from './Spinner';
 export * from './search';
 export * from './styling';
