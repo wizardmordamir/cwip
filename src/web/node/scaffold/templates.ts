@@ -328,11 +328,12 @@ import { AppShell } from 'rubato/ui/shell';
 
 // TODO: pick your brand accent color (any CSS color).
 const ACCENT = '#7c3aed'; // violet-600; adjust the .dark variant in styles.css too
+const LABEL = 'my-app'; // Brand label shown in mobile header; defaults to "rubato"
 
 export function App() {
   return (
     <BrowserRouter>
-      <AppShell accent={ACCENT}>
+      <AppShell accent={ACCENT} label={LABEL}>
         <Routes>
           {/* TODO: add your page routes here, e.g.:
               <Route path="/automations" element={<AutomationsPage />} /> */}
