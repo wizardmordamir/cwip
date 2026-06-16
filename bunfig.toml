@@ -1,0 +1,17 @@
+[env]
+NODE_ENV=development
+LOGGER_LEVEL=debug
+
+[test]
+preload = ["./scripts/testSetup", "./scripts/domTestEnv"]
+root = './src'
+
+coverage = true
+coverageSkipTestFiles = true
+coverageReporter = ["text"]
+coverageDir = "/dev/null"
+coveragePathIgnorePatterns = [
+  "dist",
+  "node_modules",
+  "**/*.ignore*",
+]

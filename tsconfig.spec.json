@@ -1,0 +1,33 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "noImplicitAny": false,
+    // Redirect spec emit away from dist so `tsc -b` never ships test code.
+    // .spec-build.ignore/ is covered by *.ignore* in .gitignore.
+    "outDir": ".spec-build.ignore",
+    "tsBuildInfoFile": ".spec-build.ignore/tsconfig.spec.tsbuildinfo",
+    "types": [
+      "node",
+      "bun"
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
+}

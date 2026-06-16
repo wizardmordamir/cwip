@@ -1,0 +1,31 @@
+/*
+ * cwip — Tailwind v4 source registration (import this so cwip's classes generate).
+ *
+ * cwip's styled React components (InfoHint, Tooltip, Toast, the Button/Input kit)
+ * AND the layout engine (cwip/layout's responsive grid: `col-span-*`, tone
+ * backgrounds, borders — written out as literal strings in the built JS so a
+ * scanner can see them) ship their utility classes as plain strings in `dist`.
+ * Tailwind v4 skips `node_modules` when detecting classes, so unless cwip's dist
+ * is registered as a source those classes are never generated — and in particular
+ * every layout node collapses to a 1/12-width track (the grid spans go missing).
+ *
+ * Importing this file registers cwip's WHOLE dist as a Tailwind source in one
+ * line, so every cwip class — react components AND layout grid/style classes,
+ * present and future — is generated, with no manual `@source` path to get wrong.
+ * Import it after Tailwind:
+ *
+ *     @import "tailwindcss";
+ *     @import "cwip/styles.css";        // generate cwip's classes (this file)
+ *     @import "cwip/react/theme.css";   // optional: the emerald accent default
+ *
+ * The `@source` below is relative to THIS file's shipped location (cwip/dist), so
+ * it covers the whole package. If you'd rather not import this file, the
+ * hand-rolled equivalent from your own CSS is:
+ *
+ *     @source "../node_modules/cwip/dist";
+ *
+ * Note the WHOLE dist, NOT just `dist/react` / `dist/web/react`: those narrower
+ * paths omit the layout grid classes in `dist/core/layout`, which silently
+ * collapses every layout node to 1/12 width. When in doubt, source the whole dist.
+ */
+@source ".";
