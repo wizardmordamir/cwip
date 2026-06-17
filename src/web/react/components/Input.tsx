@@ -13,12 +13,18 @@ export interface InputProps
   style?: CSSProperties;
 }
 
-/** A text input with the shared field styling. Spreads native input attributes;
- *  `onEnter` fires on Enter while focused. Overridable per slot (`root`). */
-export const Input = ({ onEnter, onKeyDown, className, style, classNames, styles, unstyled, ...rest }: InputProps) => (
+/**
+ * A text input with the shared field styling. Spreads native input attributes;
+ * `onEnter` fires on Enter while focused. Overridable per slot (`root`).
+ *
+ * Defaults to maxLength=1_000 for single-line inputs — override for fields
+ * that legitimately need more (e.g. URL inputs, content fields).
+ */
+export const Input = ({ onEnter, onKeyDown, className, style, classNames, styles, unstyled, maxLength = 1_000, ...rest }: InputProps) => (
   <input
     className={resolveClass(FIELD_CLASS, classNames?.root ?? className, unstyled)}
     style={resolveStyle({}, styles?.root ?? style, unstyled)}
+    maxLength={maxLength}
     onKeyDown={(e) => {
       onKeyDown?.(e);
       if (e.key === 'Enter') onEnter?.(e);
