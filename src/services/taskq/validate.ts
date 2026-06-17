@@ -1,0 +1,49 @@
+/**
+ * Pure validation for a task draft — the canonical, runtime-free gate (rubato's
+ * UI and the `taskq` CLI both call it; nothing writes a malformed row). Returns
+ * a list of human-readable problems; empty ⇒ valid.
+ */
+
+import type { NewTask } from './types';
+import { MODEL_ALIASES, TASK_SLUG_PATTERN, TASK_STATUSES, THINK_LEVELS } from './types';
+
+export function validateNewTask(draft: NewTask): string[] {
+  const errs: string[] = [];
+
+  const title = (draft.title ?? '').trim();
+  if (!title) errs.push('title is required');
+  if (/[\r\n]/.test(draft.title ?? '')) errs.push('title must be a single line');
+
+  if (draft.status != null && !TASK_STATUSES.includes(draft.status)) {
+    errs.push(`invalid status: ${draft.status}`);
+  }
+  if (draft.slug != null && draft.slug !== '' && !TASK_SLUG_PATTERN.test(draft.slug)) {
+    errs.push(`id "${draft.slug}" must match [A-Za-z0-9._-]`);
+  }
+  if (draft.group_key != null && draft.group_key !== '' && !TASK_SLUG_PATTERN.test(draft.group_key)) {
+    errs.push(`group "${draft.group_key}" must match [A-Za-z0-9._-]`);
+  }
+  for (const n of draft.needs ?? []) {
+    if (!TASK_SLUG_PATTERN.test(n)) errs.push(`needs id "${n}" must match [A-Za-z0-9._-]`);
+  }
+  if (draft.slug && (draft.needs ?? []).includes(draft.slug)) {
+    errs.push('a task cannot depend on its own id');
+  }
+  if (draft.model != null && draft.model !== '' && !(MODEL_ALIASES as readonly string[]).includes(draft.model)) {
+    errs.push(`unknown model alias "${draft.model}" (use ${MODEL_ALIASES.join(', ')})`);
+  }
+  if (draft.think != null && draft.think !== '' && !(THINK_LEVELS as string[]).includes(draft.think)) {
+    errs.push(`unknown thinking level "${draft.think}" (use ${THINK_LEVELS.join(', ')})`);
+  }
+  if (draft.recur_n != null && (!Number.isInteger(draft.recur_n) || draft.recur_n < 1)) {
+    errs.push('recur cadence must be a positive integer');
+  }
+
+  return errs;
+}
+
+/** Throw if a draft is invalid (CLI/engine guard). */
+export function assertValidNewTask(draft: NewTask): void {
+  const errs = validateNewTask(draft);
+  if (errs.length) throw new Error(`invalid task: ${errs.join('; ')}`);
+}

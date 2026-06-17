@@ -20,7 +20,17 @@ export interface InputProps
  * Defaults to maxLength=1_000 for single-line inputs — override for fields
  * that legitimately need more (e.g. URL inputs, content fields).
  */
-export const Input = ({ onEnter, onKeyDown, className, style, classNames, styles, unstyled, maxLength = 1_000, ...rest }: InputProps) => (
+export const Input = ({
+  onEnter,
+  onKeyDown,
+  className,
+  style,
+  classNames,
+  styles,
+  unstyled,
+  maxLength = 1_000,
+  ...rest
+}: InputProps) => (
   <input
     className={resolveClass(FIELD_CLASS, classNames?.root ?? className, unstyled)}
     style={resolveStyle({}, styles?.root ?? style, unstyled)}

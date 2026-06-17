@@ -115,6 +115,10 @@
       "import": "./dist/services/sqlite/index.js"
     },
     "./styles.css": "./dist/styles.css",
+    "./taskq": {
+      "types": "./dist/services/taskq/index.d.ts",
+      "import": "./dist/services/taskq/index.js"
+    },
     "./test-report": {
       "types": "./dist/ops/test-report/index.d.ts",
       "import": "./dist/ops/test-report/index.js"

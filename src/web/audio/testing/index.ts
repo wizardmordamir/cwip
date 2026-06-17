@@ -171,9 +171,7 @@ export class FakeAudioContext {
       this.audioWorklet = {
         addModule: (url: string) => {
           this.addedModules.push(url);
-          return opts.failWorklet
-            ? Promise.reject(new Error('worklet load failed'))
-            : Promise.resolve();
+          return opts.failWorklet ? Promise.reject(new Error('worklet load failed')) : Promise.resolve();
         },
       };
     }
@@ -282,5 +280,4 @@ export class FakeAudioContext {
   }
 }
 
-export const makeFakeContext = (opts: FakeContextOpts = {}): FakeAudioContext =>
-  new FakeAudioContext(opts);
+export const makeFakeContext = (opts: FakeContextOpts = {}): FakeAudioContext => new FakeAudioContext(opts);
