@@ -192,6 +192,23 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    // Repair: session_id was added to usage_ledger in migration v3, but that
+    // migration was inserted after some databases were already at v6 — the
+    // version check (v3 < current=6) skipped it on those DBs. This v7 migration
+    // applies the column + index unconditionally if still missing, making it safe
+    // for both old (missing) and new (already present) databases.
+    version: 7,
+    up: (db) => {
+      const cols = db.query(`PRAGMA table_info(usage_ledger)`).all() as { name: string }[];
+      if (!cols.some((c) => c.name === 'session_id')) {
+        db.exec(`ALTER TABLE usage_ledger ADD COLUMN session_id TEXT`);
+        db.exec(
+          `CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_session_bucket ON usage_ledger(session_id, bucket_key) WHERE session_id IS NOT NULL`,
+        );
+      }
+    },
+  },
 ];
 
 /** The latest schema version (the version the engine expects). */
