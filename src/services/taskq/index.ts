@@ -9,6 +9,7 @@
  */
 
 export * from './claim';
+export * from './clarifications';
 export * from './deps';
 export * from './paths';
 export * from './recurrence';

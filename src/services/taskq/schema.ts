@@ -127,6 +127,24 @@ const MIGRATIONS: Migration[] = [
       );
     },
   },
+  {
+    // Clarification gateways for the no-stall user-input loop (epic decomposition):
+    // an ambiguous task is parked `needs_input` with a question here; the
+    // orchestrator skips it (it isn't `ready`) and works other tasks meanwhile.
+    version: 3,
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE clarifications (
+          task_id     INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+          question    TEXT    NOT NULL,
+          asked_at    INTEGER NOT NULL,
+          answered_at INTEGER,
+          answer      TEXT,
+          PRIMARY KEY (task_id)
+        );
+      `);
+    },
+  },
 ];
 
 /** The latest schema version (the version the engine expects). */

@@ -13,9 +13,9 @@ function fresh(): TaskqDb {
 }
 
 describe('usage ledger', () => {
-  test('schema is at v2 with seeded buckets', () => {
+  test('schema has seeded usage buckets', () => {
     const db = fresh();
-    expect(SCHEMA_VERSION).toBe(2);
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(2);
     expect(
       allBucketStates(db, NOW)
         .map((b) => b.key)

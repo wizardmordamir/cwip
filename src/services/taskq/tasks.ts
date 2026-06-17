@@ -29,6 +29,11 @@ export function getNeeds(db: TaskqDb, id: number): string[] {
   );
 }
 
+/** A task's child tasks (epic decomposition), in priority order. */
+export function listChildren(db: TaskqDb, parentId: number): TaskRow[] {
+  return db.query(`SELECT * FROM tasks WHERE parent_id = ? ORDER BY ord ASC, id ASC`).all(parentId) as TaskRow[];
+}
+
 /** List tasks, newest-priority first; optionally filter by status. */
 export function listTasks(db: TaskqDb, opts: { status?: TaskStatus } = {}): TaskRow[] {
   if (opts.status) {
