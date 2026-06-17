@@ -12,6 +12,7 @@ export * from './claim';
 export * from './deps';
 export * from './paths';
 export * from './recurrence';
+export * from './render';
 export * from './schema';
 export * from './tasks';
 export * from './tx';

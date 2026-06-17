@@ -139,7 +139,8 @@
     }
   },
   "bin": {
-    "cwip": "./dist/bin/cwip.js"
+    "cwip": "./dist/bin/cwip.js",
+    "taskq": "./dist/bin/taskq.js"
   },
   "type": "module",
   "types": "./dist/index.d.ts",
