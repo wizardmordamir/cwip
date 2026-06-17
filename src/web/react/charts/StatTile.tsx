@@ -25,6 +25,14 @@ type Props = {
   icon?: ReactNode;
 };
 
+// Adapt value font size to string length so long values don't overflow the tile.
+function valueClass(value: ReactNode): string {
+  const s = typeof value === 'string' ? value : typeof value === 'number' ? String(value) : '';
+  if (s.length > 14) return 'text-base';
+  if (s.length > 8) return 'text-2xl';
+  return 'text-3xl';
+}
+
 // A big-number KPI tile — throughput, error rate, p95, total — with an optional
 // trend sparkline and/or an "X of Y" percent bar. Pure layout; charts come from
 // Sparkline.
@@ -36,7 +44,7 @@ export const StatTile = ({ label, value, sub, spark, progress, color, icon }: Pr
         <span className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</span>
         {icon && <span className="text-gray-400 dark:text-gray-500">{icon}</span>}
       </div>
-      <div className="text-3xl font-semibold tabular-nums leading-none" style={color ? { color } : undefined}>
+      <div className={`${valueClass(value)} font-semibold tabular-nums leading-none`} style={color ? { color } : undefined}>
         {value}
       </div>
       {sub && <div className="text-xs text-gray-500 dark:text-gray-400">{sub}</div>}

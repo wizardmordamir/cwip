@@ -24,7 +24,21 @@ export const formatBytes = (n: number): string => {
 
 export const formatMs = (n: number): string => {
   if (!Number.isFinite(n)) return '0 ms';
-  if (n >= 1000) return `${(n / 1000).toFixed(2)} s`;
+  const totalS = n / 1000;
+  if (totalS >= 3600) {
+    const h = Math.floor(totalS / 3600);
+    const m = Math.floor((totalS % 3600) / 60);
+    const s = Math.floor(totalS % 60);
+    if (m === 0 && s === 0) return `${h}h`;
+    if (s === 0) return `${h}h ${m}m`;
+    return `${h}h ${m}m ${s}s`;
+  }
+  if (totalS >= 60) {
+    const m = Math.floor(totalS / 60);
+    const s = Math.floor(totalS % 60);
+    return s === 0 ? `${m}m` : `${m}m ${s}s`;
+  }
+  if (totalS >= 1) return `${totalS.toFixed(2)} s`;
   if (n >= 100) return `${Math.round(n)} ms`;
   return `${Math.round(n * 10) / 10} ms`;
 };
