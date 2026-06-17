@@ -87,7 +87,7 @@ describe('dependencies', () => {
   test('nextEligible skips a dep-blocked task', () => {
     addTask(db, { title: 'dep', slug: 'd' }, { at: 'bottom' });
     addTask(db, { title: 'blocked', needs: ['d'] }, { at: 'top' }); // higher priority but blocked
-    const id = nextEligibleId(db);
+    const id = nextEligibleId(db, T0);
     expect(getTask(db, id!)?.title).toBe('dep');
   });
 });
@@ -97,7 +97,7 @@ describe('eligibility + claim', () => {
     addTask(db, { title: 'recur', recur_n: 1 }, { at: 'top' });
     addTask(db, { title: 'first' }, { at: 'bottom' });
     addTask(db, { title: 'second' }, { at: 'bottom' });
-    expect(getTask(db, nextEligibleId(db)!)?.title).toBe('first');
+    expect(getTask(db, nextEligibleId(db, T0)!)?.title).toBe('first');
   });
 
   test('claim is a CAS — only one winner', () => {

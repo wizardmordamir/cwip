@@ -88,6 +88,12 @@ export interface TaskRow {
   recur_n: number | null;
   /** Completion count at this recurring task's last run. */
   recur_last: number | null;
+  /** Time-based recurrence interval in milliseconds; null = count-based or one-shot. */
+  recur_interval_ms: number | null;
+  /** Epoch-ms when this time-based recurring task is next eligible; null = immediately due. */
+  recur_next_at: number | null;
+  /** 1 = saved template (never auto-claimed; users enqueue copies manually); 0 = normal. */
+  is_template: number;
   parent_id: number | null;
   /** Why it's on_hold / blocked / needs_input / failed. */
   note: string | null;
@@ -109,6 +115,10 @@ export interface NewTask {
   fast?: boolean;
   group_key?: string;
   recur_n?: number;
+  /** Time-based recurrence interval in milliseconds. Set this OR recur_n, not both. Pass null to clear. */
+  recur_interval_ms?: number | null;
+  /** Whether this task is a saved template (never auto-claimed). */
+  is_template?: boolean;
   parent_id?: number;
   note?: string;
   /** `(needs:…)` slugs this task waits on. */

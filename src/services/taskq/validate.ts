@@ -38,6 +38,15 @@ export function validateNewTask(draft: NewTask): string[] {
   if (draft.recur_n != null && (!Number.isInteger(draft.recur_n) || draft.recur_n < 1)) {
     errs.push('recur cadence must be a positive integer');
   }
+  if (draft.recur_interval_ms != null && (!Number.isInteger(draft.recur_interval_ms) || draft.recur_interval_ms < 60_000)) {
+    errs.push('recur_interval_ms must be an integer ≥ 60000 (1 minute)');
+  }
+  if (draft.recur_n != null && draft.recur_interval_ms != null) {
+    errs.push('use recur_n OR recur_interval_ms, not both');
+  }
+  if (draft.is_template && (draft.recur_n != null || draft.recur_interval_ms != null)) {
+    errs.push('a template cannot have a recurrence schedule');
+  }
 
   return errs;
 }

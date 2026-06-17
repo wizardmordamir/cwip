@@ -1,3 +1,4 @@
+import { nextRecurAt } from './recurrence';
 import { getTask } from './tasks';
 import { withTx } from './tx';
 import type { ClaimFilters, TaskqDb, TaskRow } from './types';
@@ -40,28 +41,44 @@ function eligibilityClause(filters: ClaimFilters | undefined): { sql: string; pa
 }
 
 /**
- * The next task to run (id), or null. One-shots first (top `ord`), then recurring
- * tasks past cooldown. Read-only; the caller claims it. Pass a live `db` inside a
- * txn for a consistent pick+claim.
+ * The next task to run (id), or null. Templates are never eligible. Priority:
+ *   1. One-shot tasks (no recur_n, no recur_interval_ms, not a template)
+ *   2. Time-based recurring tasks whose recur_next_at has passed (or never ran)
+ *   3. Count-based recurring tasks (legacy recur_n) off cooldown
+ * Read-only; the caller claims it. Pass a live `db` inside a txn for a
+ * consistent pick+claim.
  */
-export function nextEligibleId(db: TaskqDb, filters?: ClaimFilters): number | null {
+export function nextEligibleId(db: TaskqDb, nowMs: number, filters?: ClaimFilters): number | null {
   const { sql: filterSql, params } = eligibilityClause(filters);
 
+  // 1. One-shot: no recurrence, not a template.
   const oneShot = db
     .query(
       `SELECT t.id FROM tasks t
-        WHERE t.status = 'ready' AND t.recur_n IS NULL${filterSql}
+        WHERE t.status = 'ready' AND t.recur_n IS NULL AND t.recur_interval_ms IS NULL
+          AND t.is_template = 0${filterSql}
         ORDER BY t.ord ASC, t.id ASC LIMIT 1`,
     )
     .get(...params) as { id: number } | undefined | null;
   if (oneShot) return oneShot.id;
 
-  // No one-shot ready → consider recurring tasks that are off cooldown.
+  // 2. Time-based recurring: due when recur_next_at <= now (or has never run).
+  const timeBased = db
+    .query(
+      `SELECT t.id FROM tasks t
+        WHERE t.status = 'ready' AND t.recur_interval_ms IS NOT NULL AND t.is_template = 0
+          AND (t.recur_next_at IS NULL OR t.recur_next_at <= ?)${filterSql}
+        ORDER BY t.ord ASC, t.id ASC LIMIT 1`,
+    )
+    .get(nowMs, ...params) as { id: number } | undefined | null;
+  if (timeBased) return timeBased.id;
+
+  // 3. Count-based recurring (legacy): off cooldown, no one-shot work remains.
   const count = completedCount(db);
   const recur = db
     .query(
       `SELECT t.id FROM tasks t
-        WHERE t.status = 'ready' AND t.recur_n IS NOT NULL
+        WHERE t.status = 'ready' AND t.recur_n IS NOT NULL AND t.is_template = 0
           AND (t.recur_last IS NULL OR (? - t.recur_last) >= t.recur_n)${filterSql}
         ORDER BY t.ord ASC, t.id ASC LIMIT 1`,
     )
@@ -113,7 +130,7 @@ export function claim(db: TaskqDb, id: number, opts: ClaimOpts): boolean {
 /** Pick + claim the next eligible task in one atomic step. Returns it, or null. */
 export function claimNext(db: TaskqDb, opts: ClaimOpts): TaskRow | null {
   return withTx(db, () => {
-    const id = nextEligibleId(db, opts.filters);
+    const id = nextEligibleId(db, opts.nowMs, opts.filters);
     if (id == null) return null;
     const res = db.run(
       `UPDATE tasks SET status = 'claimed', updated_at = ${NOW} WHERE id = ? AND status = 'ready'`,
@@ -175,7 +192,16 @@ export function completeTask(db: TaskqDb, taskId: number, info: CompleteInfo, no
       info.summary ?? null,
     );
     db.run(`DELETE FROM leases WHERE task_id = ?`, taskId);
-    if (task.recur_n != null) {
+    if (task.recur_interval_ms != null) {
+      // Time-based recurring: reset to ready and schedule the next run.
+      const nextAt = nextRecurAt(task.recur_interval_ms, nowMs);
+      db.run(
+        `UPDATE tasks SET status = 'ready', recur_next_at = ?, updated_at = ${NOW} WHERE id = ?`,
+        nextAt,
+        taskId,
+      );
+    } else if (task.recur_n != null) {
+      // Count-based recurring (legacy): bump recur_last and reset to ready.
       const count = completedCount(db); // includes the row just inserted
       db.run(`UPDATE tasks SET status = 'ready', recur_last = ?, updated_at = ${NOW} WHERE id = ?`, count, taskId);
     } else {

@@ -188,7 +188,7 @@ function main(argv: string[]): number {
     }
 
     case 'next': {
-      const nid = nextEligibleId(db, { repo: str(flags, 'repo'), models: modelFilter(flags) });
+      const nid = nextEligibleId(db, Date.now(), { repo: str(flags, 'repo'), models: modelFilter(flags) });
       out(nid == null ? null : getTask(db, nid));
       return 0;
     }
