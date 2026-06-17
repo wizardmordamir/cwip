@@ -102,7 +102,10 @@ export function bucketState(db: TaskqDb, key: string, now: number): BucketState 
     | undefined
     | null;
   if (!b) return null;
-  const since = now - b.window_seconds * 1000;
+  const rollingSince = now - b.window_seconds * 1000;
+  // If reset_at has passed, usage from before that point belongs to the prior session — exclude it
+  // so the drain resumes automatically on the next watchdog tick without manual recalibration.
+  const since = b.reset_at != null && b.reset_at <= now ? Math.max(rollingSince, b.reset_at) : rollingSince;
   const row = db
     .query(`SELECT COALESCE(SUM(units), 0) AS u FROM usage_ledger WHERE bucket_key = ? AND at > ?`)
     .get(key, since) as {
@@ -117,7 +120,7 @@ export function bucketState(db: TaskqDb, key: string, now: number): BucketState 
     remaining,
     fraction: b.limit_units > 0 ? remaining / b.limit_units : 0,
     windowSeconds: b.window_seconds,
-    resetInSeconds: b.reset_at != null ? Math.max(0, Math.round((b.reset_at - now) / 1000)) : undefined,
+    resetInSeconds: b.reset_at != null && b.reset_at > now ? Math.round((b.reset_at - now) / 1000) : undefined,
   };
 }
 

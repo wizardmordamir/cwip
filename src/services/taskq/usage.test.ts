@@ -53,6 +53,31 @@ describe('usage ledger', () => {
     calibrateBucket(db, 'session_5h', { consumedFraction: 0.2, at: NOW });
     expect(bucketState(db, 'session_5h', NOW)?.used).toBe(20);
   });
+
+  test('auto-recover after reset_at passes: pre-reset usage excluded, drain unpauses', () => {
+    const db = fresh();
+    const RESET_AT = NOW + 4 * 3600 * 1000; // resets in 4h
+
+    // Calibrate: 100% consumed, resets in 4h — drain should pause now.
+    calibrateBucket(db, 'session_5h', { consumedFraction: 1, at: NOW, limitUnits: 100, resetAt: RESET_AT });
+    expect(bucketState(db, 'session_5h', NOW)?.fraction).toBe(0);
+    expect(scheduleDecision(allBucketStates(db, NOW), { maxJobs: 2, baseJobs: 2 }).paused).toBe(true);
+    // reset_at is still in the future → show countdown
+    expect(bucketState(db, 'session_5h', NOW)?.resetInSeconds).toBe(4 * 3600);
+
+    // 4h + 1s later: reset_at has passed — pre-reset usage is excluded automatically.
+    const AFTER_RESET = RESET_AT + 1000;
+    const s = bucketState(db, 'session_5h', AFTER_RESET);
+    expect(s?.used).toBe(0);
+    expect(s?.fraction).toBe(1);
+    // reset_at is now in the past → no longer shown as a countdown
+    expect(s?.resetInSeconds).toBeUndefined();
+    expect(scheduleDecision(allBucketStates(db, AFTER_RESET), { maxJobs: 2, baseJobs: 2 }).paused).toBe(false);
+
+    // Usage recorded after the reset counts normally.
+    recordRun(db, { at: AFTER_RESET + 1000, model: 'opus', outputTokens: 500 });
+    expect(bucketState(db, 'session_5h', AFTER_RESET + 1000)?.used).toBe(500);
+  });
 });
 
 describe('scheduleDecision', () => {
