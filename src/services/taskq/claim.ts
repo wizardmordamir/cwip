@@ -195,11 +195,7 @@ export function completeTask(db: TaskqDb, taskId: number, info: CompleteInfo, no
     if (task.recur_interval_ms != null) {
       // Time-based recurring: reset to ready and schedule the next run.
       const nextAt = nextRecurAt(task.recur_interval_ms, nowMs);
-      db.run(
-        `UPDATE tasks SET status = 'ready', recur_next_at = ?, updated_at = ${NOW} WHERE id = ?`,
-        nextAt,
-        taskId,
-      );
+      db.run(`UPDATE tasks SET status = 'ready', recur_next_at = ?, updated_at = ${NOW} WHERE id = ?`, nextAt, taskId);
     } else if (task.recur_n != null) {
       // Count-based recurring (legacy): bump recur_last and reset to ready.
       const count = completedCount(db); // includes the row just inserted

@@ -114,7 +114,8 @@ export interface NewTask {
   think?: string;
   fast?: boolean;
   group_key?: string;
-  recur_n?: number;
+  /** Count-based recurrence cadence; pass null to clear (remove count-based recurrence). */
+  recur_n?: number | null;
   /** Time-based recurrence interval in milliseconds. Set this OR recur_n, not both. Pass null to clear. */
   recur_interval_ms?: number | null;
   /** Whether this task is a saved template (never auto-claimed). */

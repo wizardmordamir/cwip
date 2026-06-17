@@ -41,4 +41,14 @@ describe('validateNewTask', () => {
       }),
     ).toEqual([]);
   });
+
+  test('accepts recur_n: null (clearing count-based recurrence)', () => {
+    expect(validateNewTask({ title: 't', recur_n: null })).toEqual([]);
+  });
+
+  test('rejects recur_n + recur_interval_ms together', () => {
+    expect(validateNewTask({ title: 't', recur_n: 5, recur_interval_ms: 3_600_000 })).toContain(
+      'use recur_n OR recur_interval_ms, not both',
+    );
+  });
 });
