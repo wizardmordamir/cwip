@@ -1,4 +1,5 @@
 import { type CSSProperties, type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { resolveClass, resolveStyle, type StyleableProps } from './styling';
 
 export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
@@ -51,8 +52,9 @@ interface Coords {
 
 // Place the bubble next to the trigger on the side that actually fits, then clamp
 // to the viewport so it's never partly off-screen. Coordinates are viewport-based
-// (the bubble is `position: fixed`), which also frees it from any `overflow:hidden`
-// ancestor that would otherwise clip it.
+// (the bubble is `position: fixed` rendered via a portal into document.body, which
+// frees it from any `overflow:hidden` ancestor AND from CSS-transformed ancestors
+// that would otherwise make `position:fixed` relative to them instead of the viewport).
 const computeCoords = (trigger: DOMRect, bubble: DOMRect, preferred: TooltipPlacement): Coords => {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -186,29 +188,31 @@ export const Tooltip = ({
       }}
     >
       <span aria-describedby={open ? id : undefined}>{children}</span>
-      {open && (
-        <span
-          ref={bubbleRef}
-          role="tooltip"
-          id={id}
-          className={resolveClass(wrap ? BUBBLE_MULTILINE_CLASS : BUBBLE_CLASS, classNames?.bubble, unstyled)}
-          style={resolveStyle(
-            {
-              position: 'fixed',
-              top: coords ? coords.top : 0,
-              left: coords ? coords.left : 0,
-              zIndex: 1000,
-              // Hidden for the first (measuring) layout pass, revealed once placed.
-              visibility: coords ? 'visible' : 'hidden',
-              ...(resolvedMaxWidth ? { maxWidth: resolvedMaxWidth } : {}),
-            },
-            styles?.bubble,
-            unstyled,
-          )}
-        >
-          {content}
-        </span>
-      )}
+      {open &&
+        createPortal(
+          <span
+            ref={bubbleRef}
+            role="tooltip"
+            id={id}
+            className={resolveClass(wrap ? BUBBLE_MULTILINE_CLASS : BUBBLE_CLASS, classNames?.bubble, unstyled)}
+            style={resolveStyle(
+              {
+                position: 'fixed',
+                top: coords ? coords.top : 0,
+                left: coords ? coords.left : 0,
+                zIndex: 1000,
+                // Hidden for the first (measuring) layout pass, revealed once placed.
+                visibility: coords ? 'visible' : 'hidden',
+                ...(resolvedMaxWidth ? { maxWidth: resolvedMaxWidth } : {}),
+              },
+              styles?.bubble,
+              unstyled,
+            )}
+          >
+            {content}
+          </span>,
+          document.body,
+        )}
     </span>
   );
 };
