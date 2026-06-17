@@ -11,6 +11,10 @@
       "types": "./dist/web/audio/index.d.ts",
       "import": "./dist/web/audio/index.js"
     },
+    "./audio/testing": {
+      "types": "./dist/web/audio/testing/index.d.ts",
+      "import": "./dist/web/audio/testing/index.js"
+    },
     "./build": {
       "types": "./dist/ops/build/index.d.ts",
       "import": "./dist/ops/build/index.js"
