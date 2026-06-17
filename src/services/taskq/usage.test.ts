@@ -92,8 +92,15 @@ describe('scheduleDecision', () => {
   });
   const cfg = { maxJobs: 4, baseJobs: 2 };
 
-  test('exhausted → paused', () => {
+  test('exhausted → paused (default)', () => {
     expect(scheduleDecision([bucket({ remaining: 0, fraction: 0 })], cfg).paused).toBe(true);
+  });
+  test('exhausted + pauseOnExhausted:false → throttle (not paused)', () => {
+    const d = scheduleDecision([bucket({ remaining: 0, fraction: 0 })], { ...cfg, pauseOnExhausted: false });
+    expect(d.paused).toBe(false);
+    expect(d.recommendedJobs).toBe(1);
+    expect(d.preferLight).toBe(true);
+    expect(d.reason).toMatch(/auto-recalibrate/);
   });
   test('scarce → throttle + light', () => {
     const d = scheduleDecision([bucket({ fraction: 0.05, remaining: 5 })], cfg);

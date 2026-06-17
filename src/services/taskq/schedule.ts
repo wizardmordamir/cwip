@@ -19,6 +19,13 @@ export interface ScheduleConfig {
   abundantFraction?: number;
   /** A reset within this many seconds is "near" (default 1800). */
   nearResetSeconds?: number;
+  /**
+   * When false, treat an exhausted bucket as "scarce" (throttle to 1 light-model
+   * worker) instead of pausing entirely. Use when local estimates are unreliable
+   * — the drain keeps running and auto-recalibration corrects stale counts on
+   * the next successful task. Default: true (original behavior).
+   */
+  pauseOnExhausted?: boolean;
 }
 
 export interface ScheduleDecision {
@@ -37,15 +44,27 @@ export function scheduleDecision(buckets: BucketState[], config: ScheduleConfig)
   const low = config.lowFraction ?? 0.12;
   const abundant = config.abundantFraction ?? 0.5;
   const nearReset = config.nearResetSeconds ?? 1800;
+  const pauseOnExhausted = config.pauseOnExhausted ?? true;
 
   if (buckets.some((b) => b.remaining <= 0)) {
     const ex = buckets.find((b) => b.remaining <= 0)!;
+    if (pauseOnExhausted) {
+      return {
+        paused: true,
+        recommendedJobs: 0,
+        preferLight: true,
+        burnExpiring: false,
+        reason: `${ex.key} limit exhausted`,
+      };
+    }
+    // pauseOnExhausted=false: treat as scarce so the drain keeps running and
+    // auto-recalibration can correct stale local estimates on a successful task.
     return {
-      paused: true,
-      recommendedJobs: 0,
+      paused: false,
+      recommendedJobs: 1,
       preferLight: true,
       burnExpiring: false,
-      reason: `${ex.key} limit exhausted`,
+      reason: `${ex.key} estimate exhausted — throttling (auto-recalibrate on success)`,
     };
   }
 
