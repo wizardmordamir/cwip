@@ -193,3 +193,28 @@ describe('lifecycle: complete / fail / release / reap', () => {
     expect(DEFAULT_LEASE_TTL_MS).toBeGreaterThan(0);
   });
 });
+
+describe('updateTask: clearing recur_n with null', () => {
+  test('recur_n: null clears count-based recurrence', () => {
+    const id = addTask(db, { title: 'r', recur_n: 5 });
+    expect(getTask(db, id)?.recur_n).toBe(5);
+    updateTask(db, id, { recur_n: null });
+    expect(getTask(db, id)?.recur_n).toBeNull();
+  });
+
+  test('migrating count-based to time-based: recur_n: null + recur_interval_ms', () => {
+    const id = addTask(db, { title: 'r', recur_n: 5 });
+    updateTask(db, id, { recur_n: null, recur_interval_ms: 3_600_000 });
+    const t = getTask(db, id)!;
+    expect(t.recur_n).toBeNull();
+    expect(t.recur_interval_ms).toBe(3_600_000);
+  });
+
+  test('recur_n: null + is_template converts to template', () => {
+    const id = addTask(db, { title: 'r', recur_n: 3 });
+    updateTask(db, id, { recur_n: null, is_template: true, status: 'on_hold' });
+    const t = getTask(db, id)!;
+    expect(t.recur_n).toBeNull();
+    expect(t.is_template).toBe(1);
+  });
+});

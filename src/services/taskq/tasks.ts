@@ -113,7 +113,7 @@ export function updateTask(db: TaskqDb, id: number, patch: TaskPatch): void {
     group_key: patch.group_key ?? current.group_key ?? undefined,
     model: patch.model ?? current.model ?? undefined,
     think: patch.think ?? current.think ?? undefined,
-    recur_n: patch.recur_n ?? current.recur_n ?? undefined,
+    recur_n: 'recur_n' in patch ? (patch.recur_n ?? undefined) : (current.recur_n ?? undefined),
     needs: patch.needs,
   });
 
