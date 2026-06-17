@@ -81,6 +81,52 @@ const MIGRATIONS: Migration[] = [
       db.exec(`CREATE INDEX idx_completions_task ON completions(task_id);`);
     },
   },
+  {
+    // Token accounting: rolling-window usage buckets + a per-event ledger. The
+    // orchestrator records each run's (model-weighted) cost; remaining capacity
+    // is `limit − Σ(units in the window)`. Manual `/usage` calibration inserts a
+    // sized 'manual' event (which ages out of the rolling window on its own) and
+    // may set the limit + reset_at.
+    version: 2,
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE limit_buckets (
+          key            TEXT    PRIMARY KEY,
+          limit_units    REAL    NOT NULL,
+          window_seconds INTEGER NOT NULL,
+          reset_at       INTEGER,
+          calibrated_at  INTEGER
+        );
+      `);
+      db.exec(`
+        CREATE TABLE usage_ledger (
+          id         INTEGER PRIMARY KEY AUTOINCREMENT,
+          at         INTEGER NOT NULL,
+          bucket_key TEXT    NOT NULL,
+          units      REAL    NOT NULL,
+          model      TEXT,
+          source     TEXT    NOT NULL DEFAULT 'run'
+        );
+      `);
+      db.exec(`CREATE INDEX idx_usage_bucket_at ON usage_ledger(bucket_key, at);`);
+      // Seed the three Max-plan windows with placeholder limits (calibrate to real).
+      db.run(
+        `INSERT INTO limit_buckets(key, limit_units, window_seconds) VALUES ('session_5h', ?, ?)`,
+        1_000_000,
+        18_000,
+      );
+      db.run(
+        `INSERT INTO limit_buckets(key, limit_units, window_seconds) VALUES ('weekly_total', ?, ?)`,
+        5_000_000,
+        604_800,
+      );
+      db.run(
+        `INSERT INTO limit_buckets(key, limit_units, window_seconds) VALUES ('weekly_sonnet', ?, ?)`,
+        2_000_000,
+        604_800,
+      );
+    },
+  },
 ];
 
 /** The latest schema version (the version the engine expects). */
