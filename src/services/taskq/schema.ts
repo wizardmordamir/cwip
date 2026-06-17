@@ -147,13 +147,47 @@ const MIGRATIONS: Migration[] = [
     version: 4,
     up: (db) => {
       db.exec(`
-        CREATE TABLE clarifications (
+        CREATE TABLE IF NOT EXISTS clarifications (
           task_id     INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
           question    TEXT    NOT NULL,
           asked_at    INTEGER NOT NULL,
           answered_at INTEGER,
           answer      TEXT,
           PRIMARY KEY (task_id)
+        );
+      `);
+    },
+  },
+  {
+    // Dual-track scheduling: time-based recurring tasks + saved templates.
+    //   recur_interval_ms — interval in milliseconds (null = count-based or one-shot).
+    //   recur_next_at     — epoch-ms when this recurring task next becomes eligible.
+    //   is_template       — 1 = template (never auto-claimed; users enqueue copies manually).
+    version: 5,
+    up: (db) => {
+      db.exec(`ALTER TABLE tasks ADD COLUMN recur_interval_ms INTEGER`);
+      db.exec(`ALTER TABLE tasks ADD COLUMN recur_next_at INTEGER`);
+      db.exec(`ALTER TABLE tasks ADD COLUMN is_template INTEGER NOT NULL DEFAULT 0`);
+    },
+  },
+  {
+    // Drain run audit log: records each drain pass decision, worker counts, and
+    // outcome (completed/failed/reaped). Powers the "Drain history" panel in the
+    // Workers tab — answers "it ran a minute ago, why didn't it start a task?"
+    version: 6,
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS drain_runs (
+          id         INTEGER PRIMARY KEY AUTOINCREMENT,
+          started_at INTEGER NOT NULL,
+          ended_at   INTEGER,
+          decision   TEXT    NOT NULL,
+          reason     TEXT    NOT NULL,
+          jobs       INTEGER NOT NULL DEFAULT 0,
+          max_jobs   INTEGER NOT NULL DEFAULT 0,
+          completed  INTEGER,
+          failed     INTEGER,
+          reaped     INTEGER
         );
       `);
     },
