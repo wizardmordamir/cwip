@@ -30,6 +30,21 @@ export function unitWeight(model: string | null | undefined): number {
   return model ? (MODEL_UNIT_WEIGHT[model] ?? 1) : 1;
 }
 
+/**
+ * Map a full Claude model ID (e.g. "claude-sonnet-4-6") to the short alias used
+ * in MODEL_UNIT_WEIGHT. Returns null for unknown IDs — callers fall back to opus
+ * weight (conservative: better to slightly overcount than under-count).
+ */
+export function modelAliasFromId(fullId: string | null | undefined): string | null {
+  if (!fullId) return null;
+  const id = fullId.toLowerCase();
+  if (id.includes('sonnet')) return 'sonnet';
+  if (id.includes('haiku')) return 'haiku';
+  if (id.includes('opus')) return id.includes('1m') ? 'opus-1m' : 'opus';
+  if (id.includes('fable')) return 'fable';
+  return null;
+}
+
 export interface BucketState {
   key: string;
   limit: number;
@@ -45,15 +60,23 @@ export interface BucketState {
 /** Record a raw usage event against one bucket. */
 export function recordUsageEvent(
   db: TaskqDb,
-  e: { at: number; bucketKey: string; units: number; model?: string | null; source?: string },
+  e: {
+    at: number;
+    bucketKey: string;
+    units: number;
+    model?: string | null;
+    source?: string;
+    sessionId?: string | null;
+  },
 ): void {
   db.run(
-    `INSERT INTO usage_ledger (at, bucket_key, units, model, source) VALUES (?, ?, ?, ?, ?)`,
+    `INSERT OR IGNORE INTO usage_ledger (at, bucket_key, units, model, source, session_id) VALUES (?, ?, ?, ?, ?, ?)`,
     e.at,
     e.bucketKey,
     e.units,
     e.model ?? null,
     e.source ?? 'run',
+    e.sessionId ?? null,
   );
 }
 
@@ -61,11 +84,15 @@ export function recordUsageEvent(
  * Record a completed run's cost: weighted units land in `session_5h` +
  * `weekly_total`, and (for a Sonnet run) also `weekly_sonnet`.
  */
-export function recordRun(db: TaskqDb, run: { at: number; model: string | null; outputTokens: number }): void {
+export function recordRun(
+  db: TaskqDb,
+  run: { at: number; model: string | null; outputTokens: number; sessionId?: string | null },
+): void {
   const units = run.outputTokens * unitWeight(run.model);
-  recordUsageEvent(db, { at: run.at, bucketKey: 'session_5h', units, model: run.model });
-  recordUsageEvent(db, { at: run.at, bucketKey: 'weekly_total', units, model: run.model });
-  if (run.model === 'sonnet') recordUsageEvent(db, { at: run.at, bucketKey: 'weekly_sonnet', units, model: run.model });
+  recordUsageEvent(db, { at: run.at, bucketKey: 'session_5h', units, model: run.model, sessionId: run.sessionId });
+  recordUsageEvent(db, { at: run.at, bucketKey: 'weekly_total', units, model: run.model, sessionId: run.sessionId });
+  if (run.model === 'sonnet')
+    recordUsageEvent(db, { at: run.at, bucketKey: 'weekly_sonnet', units, model: run.model, sessionId: run.sessionId });
 }
 
 /** Current state of one bucket (limit − windowed usage). */

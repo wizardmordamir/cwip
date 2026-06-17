@@ -12,10 +12,10 @@ function fresh(): TaskqDb {
   return d;
 }
 
-describe('clarifications + children (v3)', () => {
-  test('schema at v3', () => {
+describe('clarifications + children (v4)', () => {
+  test('schema at v4', () => {
     fresh();
-    expect(SCHEMA_VERSION).toBe(3);
+    expect(SCHEMA_VERSION).toBe(4);
   });
 
   test('open clarifications list needs_input gateways; answering closes them', () => {

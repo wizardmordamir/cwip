@@ -128,10 +128,23 @@ const MIGRATIONS: Migration[] = [
     },
   },
   {
+    // Add session_id to usage_ledger for JSONL-ingest dedup: a unique partial index
+    // on (session_id, bucket_key) prevents the same drain-task result being counted
+    // twice across watchdog polls. NULL session_ids (manual calibrations) are
+    // unconstrained — SQLite partial indexes exclude NULLs by default.
+    version: 3,
+    up: (db) => {
+      db.exec(`ALTER TABLE usage_ledger ADD COLUMN session_id TEXT`);
+      db.exec(
+        `CREATE UNIQUE INDEX idx_usage_session_bucket ON usage_ledger(session_id, bucket_key) WHERE session_id IS NOT NULL`,
+      );
+    },
+  },
+  {
     // Clarification gateways for the no-stall user-input loop (epic decomposition):
     // an ambiguous task is parked `needs_input` with a question here; the
     // orchestrator skips it (it isn't `ready`) and works other tasks meanwhile.
-    version: 3,
+    version: 4,
     up: (db) => {
       db.exec(`
         CREATE TABLE clarifications (
