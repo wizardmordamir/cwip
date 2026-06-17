@@ -28,8 +28,8 @@ type Props = {
 // Adapt value font size to string length so long values don't overflow the tile.
 function valueClass(value: ReactNode): string {
   const s = typeof value === 'string' ? value : typeof value === 'number' ? String(value) : '';
-  if (s.length > 14) return 'text-base';
-  if (s.length > 8) return 'text-2xl';
+  if (s.length > 12) return 'text-base';
+  if (s.length > 7) return 'text-2xl';
   return 'text-3xl';
 }
 
@@ -44,7 +44,10 @@ export const StatTile = ({ label, value, sub, spark, progress, color, icon }: Pr
         <span className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</span>
         {icon && <span className="text-gray-400 dark:text-gray-500">{icon}</span>}
       </div>
-      <div className={`${valueClass(value)} font-semibold tabular-nums leading-none`} style={color ? { color } : undefined}>
+      <div
+        className={`${valueClass(value)} min-w-0 break-words font-semibold leading-tight tabular-nums`}
+        style={color ? { color } : undefined}
+      >
         {value}
       </div>
       {sub && <div className="text-xs text-gray-500 dark:text-gray-400">{sub}</div>}

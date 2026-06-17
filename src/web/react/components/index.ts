@@ -24,6 +24,7 @@ export * from './EnvEditor';
 export * from './FieldLabel';
 export * from './field';
 export * from './IconButton';
+export * from './InfoField';
 export * from './InlineEditableText';
 export * from './Input';
 export * from './JsonEditor';
