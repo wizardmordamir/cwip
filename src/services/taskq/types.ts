@@ -84,6 +84,11 @@ export interface TaskRow {
   think: string | null;
   fast: number;
   group_key: string | null;
+  /**
+   * Serial-execution group name. When set, only one task in the group runs at a
+   * time — the orchestrator skips any other member while one is `claimed`.
+   */
+  serial_group: string | null;
   /** `(recur:N)` cadence; null = one-shot. */
   recur_n: number | null;
   /** Completion count at this recurring task's last run. */
@@ -119,6 +124,8 @@ export interface NewTask {
   think?: string;
   fast?: boolean;
   group_key?: string;
+  /** Serial-execution group: only one member runs at a time. */
+  serial_group?: string;
   /** Count-based recurrence cadence; pass null to clear (remove count-based recurrence). */
   recur_n?: number | null;
   /** Time-based recurrence interval in milliseconds. Set this OR recur_n, not both. Pass null to clear. */

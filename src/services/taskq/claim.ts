@@ -37,6 +37,10 @@ function eligibilityClause(filters: ClaimFilters | undefined): { sql: string; pa
   clauses.push(
     `NOT EXISTS (SELECT 1 FROM task_deps d JOIN tasks x ON x.slug = d.needs_slug AND x.status <> 'done' WHERE d.task_id = t.id)`,
   );
+  // Serial group: skip when another member of the same serial_group is claimed.
+  clauses.push(
+    `(t.serial_group IS NULL OR NOT EXISTS (SELECT 1 FROM tasks s WHERE s.serial_group = t.serial_group AND s.status = 'claimed' AND s.id <> t.id))`,
+  );
   return { sql: clauses.length ? ` AND ${clauses.join(' AND ')}` : '', params };
 }
 

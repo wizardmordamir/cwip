@@ -13,9 +13,18 @@ import {
   releaseLease,
 } from './claim';
 import { depsSatisfied } from './deps';
-import { isRecurDue, isTimeRecurDue } from './recurrence';
+import { isTimeRecurDue } from './recurrence';
 import { migrate, SCHEMA_VERSION } from './schema';
-import { addTask, getTask, listTasks, moveTask, setStatus, updateTask } from './tasks';
+import {
+  addTask,
+  getTask,
+  listSerialGroups,
+  listTasks,
+  moveTask,
+  setSerialGroup,
+  setStatus,
+  updateTask,
+} from './tasks';
 import type { TaskqDb } from './types';
 
 let db: TaskqDb;
@@ -193,6 +202,57 @@ describe('lifecycle: complete / fail / release / reap', () => {
 
   test('default lease TTL is exported and positive', () => {
     expect(DEFAULT_LEASE_TTL_MS).toBeGreaterThan(0);
+  });
+});
+
+describe('serial_group: one-at-a-time gating', () => {
+  test('only the first task is eligible while no member is claimed', () => {
+    const a = addTask(db, { title: 'a', serial_group: 'sg' }, { at: 'bottom' });
+    const b = addTask(db, { title: 'b', serial_group: 'sg' }, { at: 'bottom' });
+    const other = addTask(db, { title: 'other' }, { at: 'bottom' });
+    const id = nextEligibleId(db, T0);
+    expect(id).toBe(a); // highest priority in the serial group
+    expect(nextEligibleId(db, T0)).toBe(a); // still same — no state changed
+    void b;
+    void other;
+  });
+
+  test('claiming a member blocks other members of the same group', () => {
+    const a = addTask(db, { title: 'a', serial_group: 'sg' }, { at: 'bottom' });
+    const _b = addTask(db, { title: 'b', serial_group: 'sg' }, { at: 'bottom' });
+    const other = addTask(db, { title: 'other' }, { at: 'bottom' });
+    claim(db, a, { workerId: 'w', nowMs: T0 });
+    // b should be skipped because a is claimed in the same serial_group
+    expect(nextEligibleId(db, T0)).toBe(other);
+  });
+
+  test('once the claimed member finishes the next member becomes eligible', () => {
+    const a = addTask(db, { title: 'a', serial_group: 'sg' }, { at: 'bottom' });
+    const b = addTask(db, { title: 'b', serial_group: 'sg' }, { at: 'bottom' });
+    claim(db, a, { workerId: 'w', nowMs: T0 });
+    completeTask(db, a, {}, T0 + 1000);
+    expect(nextEligibleId(db, T0)).toBe(b);
+  });
+
+  test('tasks in different serial groups are independent', () => {
+    const a = addTask(db, { title: 'a', serial_group: 'g1' }, { at: 'bottom' });
+    const b = addTask(db, { title: 'b', serial_group: 'g2' }, { at: 'bottom' });
+    claim(db, a, { workerId: 'w', nowMs: T0 });
+    // b is in a different group — not gated
+    expect(nextEligibleId(db, T0)).toBe(b);
+  });
+
+  test('setSerialGroup assigns group to multiple tasks; listSerialGroups enumerates them', () => {
+    const a = addTask(db, { title: 'a' });
+    const b = addTask(db, { title: 'b' });
+    const c = addTask(db, { title: 'c', serial_group: 'existing' });
+    setSerialGroup(db, [a, b], 'new-group');
+    expect(getTask(db, a)?.serial_group).toBe('new-group');
+    expect(getTask(db, b)?.serial_group).toBe('new-group');
+    expect(listSerialGroups(db).sort()).toEqual(['existing', 'new-group']);
+    setSerialGroup(db, [a], null); // clear from one
+    expect(getTask(db, a)?.serial_group).toBeNull();
+    void c;
   });
 });
 

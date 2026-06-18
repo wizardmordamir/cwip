@@ -75,8 +75,8 @@ export function addTask(db: TaskqDb, draft: NewTask, position: Position = { at: 
     if (draft.slug) assertSlugFree(db, draft.slug, null);
     const ord = ordFor(db, position);
     const res = db.run(
-      `INSERT INTO tasks (ord, status, slug, title, body, repo, model, think, fast, group_key, recur_n, recur_interval_ms, is_template, is_saved, parent_id, note)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tasks (ord, status, slug, title, body, repo, model, think, fast, group_key, serial_group, recur_n, recur_interval_ms, is_template, is_saved, parent_id, note)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ord,
       draft.status ?? 'ready',
       draft.slug ?? null,
@@ -87,6 +87,7 @@ export function addTask(db: TaskqDb, draft: NewTask, position: Position = { at: 
       draft.think ?? null,
       draft.fast ? 1 : 0,
       draft.group_key ?? null,
+      draft.serial_group ?? null,
       draft.recur_n ?? null,
       draft.recur_interval_ms ?? null,
       draft.is_template ? 1 : 0,
@@ -135,6 +136,7 @@ export function updateTask(db: TaskqDb, id: number, patch: TaskPatch): void {
     if (patch.think !== undefined) set('think', patch.think || null);
     if (patch.fast !== undefined) set('fast', patch.fast ? 1 : 0);
     if (patch.group_key !== undefined) set('group_key', patch.group_key || null);
+    if (patch.serial_group !== undefined) set('serial_group', patch.serial_group || null);
     if (patch.recur_n !== undefined) set('recur_n', patch.recur_n ?? null);
     if (patch.recur_interval_ms !== undefined) set('recur_interval_ms', patch.recur_interval_ms ?? null);
     if (patch.is_template !== undefined) set('is_template', patch.is_template ? 1 : 0);
@@ -176,6 +178,30 @@ export function moveTask(db: TaskqDb, id: number, position: Position): void {
 export function deleteTask(db: TaskqDb, id: number): void {
   const res = db.run(`DELETE FROM tasks WHERE id = ?`, id);
   if (res.changes === 0) throw new Error(`task ${id} not found`);
+}
+
+/**
+ * Set `serial_group` on all listed task ids in one transaction.
+ * Pass null to clear the group from all of them.
+ */
+export function setSerialGroup(db: TaskqDb, ids: number[], serialGroup: string | null): void {
+  if (ids.length === 0) return;
+  withTx(db, () => {
+    for (const id of ids) {
+      db.run(`UPDATE tasks SET serial_group = ?, updated_at = ${NOW} WHERE id = ?`, serialGroup, id);
+    }
+  });
+}
+
+/** Distinct serial_group names currently in the tasks table (non-null only). */
+export function listSerialGroups(db: TaskqDb): string[] {
+  return (
+    db
+      .query(`SELECT DISTINCT serial_group FROM tasks WHERE serial_group IS NOT NULL ORDER BY serial_group ASC`)
+      .all() as {
+      serial_group: string;
+    }[]
+  ).map((r) => r.serial_group);
 }
 
 function dedupe(xs: string[]): string[] {

@@ -220,6 +220,17 @@ const MIGRATIONS: Migration[] = [
       db.exec(`ALTER TABLE tasks ADD COLUMN is_saved INTEGER NOT NULL DEFAULT 0`);
     },
   },
+  {
+    // Serial-execution groups: tasks in the same serial_group run one at a time.
+    // The orchestrator skips a task when another member of its serial_group is
+    // currently `claimed`. No status changes needed — the eligibility check is
+    // a simple NOT EXISTS on the claimed sibling.
+    version: 9,
+    up: (db) => {
+      db.exec(`ALTER TABLE tasks ADD COLUMN serial_group TEXT`);
+      db.exec(`CREATE INDEX idx_tasks_serial_group ON tasks(serial_group)`);
+    },
+  },
 ];
 
 /** The latest schema version (the version the engine expects). */
