@@ -35,6 +35,8 @@ type Props = {
   includeDate?: boolean;
   // Optional horizontal reference line (e.g. an SLA threshold).
   reference?: { y: number; label?: string; color?: string };
+  // Pixel width reserved for the Y-axis labels. Increase for long formatted values (e.g. "$10,000.00").
+  yAxisWidth?: number;
 };
 
 // The workhorse line/area time-series for the dashboard. Theme-aware, gradient
@@ -48,6 +50,7 @@ export const TimeSeriesChart = ({
   valueFormatter = formatNumber,
   includeDate = false,
   reference,
+  yAxisWidth = 48,
 }: Props) => {
   const theme = useChartTheme();
   const gradId = useId().replace(/:/g, '');
@@ -82,7 +85,7 @@ export const TimeSeriesChart = ({
           tick={{ fill: theme.axis, fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          width={48}
+          width={yAxisWidth}
         />
         <Tooltip
           isAnimationActive={false}

@@ -25,6 +25,8 @@ type Props = {
   colorByIndex?: boolean;
   valueFormatter?: (n: number) => string;
   emptyHint?: string;
+  // Pixel width reserved for the Y-axis labels. Increase for long formatted values (e.g. "$10,000.00").
+  yAxisWidth?: number;
 };
 
 // A categorical bar chart that handles signed values: a zero baseline is drawn and
@@ -37,6 +39,7 @@ export const CategoryBars = ({
   colorByIndex = false,
   valueFormatter = formatNumber,
   emptyHint = 'No data',
+  yAxisWidth = 48,
 }: Props) => {
   const theme = useChartTheme();
   if (!data.length) {
@@ -77,7 +80,7 @@ export const CategoryBars = ({
           tick={{ fill: theme.axis, fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          width={48}
+          width={yAxisWidth}
         />
         {hasNegative && <ReferenceLine y={0} stroke={theme.axis} />}
         <Tooltip
