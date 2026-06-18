@@ -13,7 +13,7 @@ import {
   releaseLease,
 } from './claim';
 import { depsSatisfied } from './deps';
-import { isRecurDue } from './recurrence';
+import { isRecurDue, isTimeRecurDue } from './recurrence';
 import { migrate, SCHEMA_VERSION } from './schema';
 import { addTask, getTask, listTasks, moveTask, setStatus, updateTask } from './tasks';
 import type { TaskqDb } from './types';
@@ -144,23 +144,25 @@ describe('lifecycle: complete / fail / release / reap', () => {
     expect(completedCount(db)).toBe(1);
   });
 
-  test('recurring complete → back to ready, bumped recur_last, off cooldown', () => {
-    const rid = addTask(db, { title: 'recurring', recur_n: 2 });
-    // due immediately (count 0, last 0)
-    expect(isRecurDue(getTask(db, rid)!, completedCount(db))).toBe(true);
+  test('saved (no interval) complete → on_hold, not done', () => {
+    const rid = addTask(db, { title: 'saved-task', is_saved: true });
+    claim(db, rid, { workerId: 'w', nowMs: T0 });
+    completeTask(db, rid, {}, T0 + 1);
+    expect(getTask(db, rid)?.status).toBe('on_hold');
+  });
+
+  test('saved + interval complete → back to ready with recur_next_at', () => {
+    const INTERVAL = 7 * 24 * 60 * 60 * 1000; // 7 days
+    const rid = addTask(db, { title: 'saved-interval', is_saved: true, recur_interval_ms: INTERVAL });
     claim(db, rid, { workerId: 'w', nowMs: T0 });
     completeTask(db, rid, {}, T0 + 1);
     const after = getTask(db, rid)!;
     expect(after.status).toBe('ready');
-    expect(isRecurDue(after, completedCount(db))).toBe(false); // just ran, cooldown reset
-    // two more completions elapse → due again
-    const a = addTask(db, { title: 'a' });
-    claim(db, a, { workerId: 'w', nowMs: T0 });
-    completeTask(db, a, {}, T0 + 2);
-    const b = addTask(db, { title: 'b' });
-    claim(db, b, { workerId: 'w', nowMs: T0 });
-    completeTask(db, b, {}, T0 + 3);
-    expect(isRecurDue(getTask(db, rid)!, completedCount(db))).toBe(true);
+    expect(after.recur_next_at).toBe(T0 + 1 + INTERVAL);
+    // Not eligible yet (next_at is in the future)
+    expect(isTimeRecurDue(after, T0 + 1)).toBe(false);
+    // Eligible once the interval has passed
+    expect(isTimeRecurDue(after, T0 + 1 + INTERVAL)).toBe(true);
   });
 
   test('fail sets failed + reason; release returns to ready', () => {

@@ -94,6 +94,11 @@ export interface TaskRow {
   recur_next_at: number | null;
   /** 1 = saved template (never auto-claimed; users enqueue copies manually); 0 = normal. */
   is_template: number;
+  /**
+   * 1 = saved task: after completion it returns to on_hold (not done) so it can be
+   * re-queued manually or auto-scheduled via recur_interval_ms. 0 = one-shot (done on completion).
+   */
+  is_saved: number;
   parent_id: number | null;
   /** Why it's on_hold / blocked / needs_input / failed. */
   note: string | null;
@@ -120,6 +125,12 @@ export interface NewTask {
   recur_interval_ms?: number | null;
   /** Whether this task is a saved template (never auto-claimed). */
   is_template?: boolean;
+  /**
+   * When true, the task returns to on_hold after completion instead of done.
+   * Pair with recur_interval_ms for automatic scheduling, or leave unset to
+   * require manual re-queuing.
+   */
+  is_saved?: boolean;
   parent_id?: number;
   note?: string;
   /** `(needs:…)` slugs this task waits on. */

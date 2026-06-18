@@ -171,9 +171,10 @@ export interface CompleteInfo {
 }
 
 /**
- * Complete a claimed task: record a `completions` row and drop the lease. A
- * one-shot becomes `done`; a recurring task returns to `ready` with its
- * `recur_last` bumped to the new completion count (restarting its cooldown).
+ * Complete a claimed task: record a `completions` row and drop the lease.
+ *   - interval set: auto-schedule next run (status → ready, recur_next_at bumped).
+ *   - is_saved=1, no interval: park in on_hold for manual re-queuing.
+ *   - one-shot (default): status → done.
  */
 export function completeTask(db: TaskqDb, taskId: number, info: CompleteInfo, nowMs: number): void {
   withTx(db, () => {
@@ -193,13 +194,12 @@ export function completeTask(db: TaskqDb, taskId: number, info: CompleteInfo, no
     );
     db.run(`DELETE FROM leases WHERE task_id = ?`, taskId);
     if (task.recur_interval_ms != null) {
-      // Time-based recurring: reset to ready and schedule the next run.
+      // Auto-schedule: back to ready at the next interval boundary.
       const nextAt = nextRecurAt(task.recur_interval_ms, nowMs);
       db.run(`UPDATE tasks SET status = 'ready', recur_next_at = ?, updated_at = ${NOW} WHERE id = ?`, nextAt, taskId);
-    } else if (task.recur_n != null) {
-      // Count-based recurring (legacy): bump recur_last and reset to ready.
-      const count = completedCount(db); // includes the row just inserted
-      db.run(`UPDATE tasks SET status = 'ready', recur_last = ?, updated_at = ${NOW} WHERE id = ?`, count, taskId);
+    } else if (task.is_saved) {
+      // Saved without interval: park until the user manually re-queues it.
+      db.run(`UPDATE tasks SET status = 'on_hold', updated_at = ${NOW} WHERE id = ?`, taskId);
     } else {
       db.run(`UPDATE tasks SET status = 'done', updated_at = ${NOW} WHERE id = ?`, taskId);
     }

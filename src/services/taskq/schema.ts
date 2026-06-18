@@ -209,6 +209,17 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    // Saved tasks: a task marked is_saved=1 returns to on_hold after completion
+    // (instead of done) so it persists as a reusable/manually-triggered task.
+    // Combined with recur_interval_ms it auto-schedules; without an interval it
+    // sits in on_hold until the user queues it again. Replaces the legacy
+    // count-based recur_n pattern.
+    version: 8,
+    up: (db) => {
+      db.exec(`ALTER TABLE tasks ADD COLUMN is_saved INTEGER NOT NULL DEFAULT 0`);
+    },
+  },
 ];
 
 /** The latest schema version (the version the engine expects). */
