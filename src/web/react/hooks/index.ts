@@ -11,6 +11,7 @@ export * from './useDiscardGuard';
 export * from './useDismissibleItems';
 export * from './useDragReorder';
 export * from './useEscapeKey';
+export * from './useHasHover';
 export * from './useKeyboardInset';
 export * from './useKeyDown';
 export * from './useOnlineStatus';

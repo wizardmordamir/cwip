@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it } from 'bun:test';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Tooltip } from './Tooltip';
 
@@ -72,5 +72,117 @@ describe('Tooltip interaction', () => {
 
     fireEvent.keyDown(root, { key: 'Escape' });
     expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+});
+
+// On touch (no-hover) devices the hover/focus path is gone, so the component
+// falls back per `mobile`. We simulate a touch device by stubbing matchMedia so
+// the `(hover: hover) and (pointer: fine)` query reports no match.
+const realMatchMedia = window.matchMedia;
+const simulateHover = (hasHover: boolean) => {
+  // Minimal MediaQueryList stub for the test environment.
+  window.matchMedia = ((query: string) => ({
+    matches: hasHover,
+    media: query,
+    onchange: null,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia;
+};
+
+describe('Tooltip touch behavior', () => {
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+  });
+
+  it("mobile='icon' (default): appends a disclosure icon that toggles the bubble on tap", () => {
+    simulateHover(false);
+    render(
+      <Tooltip content="Copy to clipboard">
+        <button type="button">Copy</button>
+      </Tooltip>,
+    );
+    const icon = screen.getByRole('button', { name: 'More info' });
+    expect(screen.queryByRole('tooltip')).toBeNull();
+
+    fireEvent.click(icon);
+    expect(screen.getByRole('tooltip').textContent).toBe('Copy to clipboard');
+
+    // A second tap on the icon toggles it back off.
+    fireEvent.click(icon);
+    expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+
+  it("mobile='icon': an outside tap closes the open bubble", () => {
+    simulateHover(false);
+    render(
+      <Tooltip content="Copy to clipboard">
+        <button type="button">Copy</button>
+      </Tooltip>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'More info' }));
+    expect(screen.queryByRole('tooltip')).not.toBeNull();
+
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+
+  it("mobile='icon': renders a custom mobileIcon when provided", () => {
+    simulateHover(false);
+    render(
+      <Tooltip content="Help" mobileIcon={<span data-testid="custom-icon">?</span>}>
+        <span>Field</span>
+      </Tooltip>,
+    );
+    expect(screen.getByTestId('custom-icon')).not.toBeNull();
+  });
+
+  it("mobile='tap': no icon — tapping the trigger reveals the bubble", () => {
+    simulateHover(false);
+    const { container } = render(
+      <Tooltip content="Run" mobile="tap">
+        <button type="button">Run</button>
+      </Tooltip>,
+    );
+    expect(screen.queryByRole('button', { name: 'More info' })).toBeNull();
+    expect(screen.queryByRole('tooltip')).toBeNull();
+
+    fireEvent.click(container.firstChild as HTMLElement);
+    expect(screen.getByRole('tooltip').textContent).toBe('Run');
+  });
+
+  it("mobile='off': no touch affordance at all", () => {
+    simulateHover(false);
+    const { container } = render(
+      <Tooltip content="Nope" mobile="off">
+        <button type="button">X</button>
+      </Tooltip>,
+    );
+    expect(screen.queryByRole('button', { name: 'More info' })).toBeNull();
+    fireEvent.click(container.firstChild as HTMLElement);
+    expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+
+  it('empty content adds no disclosure icon (conditional tooltip passthrough)', () => {
+    simulateHover(false);
+    render(
+      <Tooltip content=''>
+        <span>Just text</span>
+      </Tooltip>,
+    );
+    expect(screen.queryByRole('button', { name: 'More info' })).toBeNull();
+  });
+
+  it('on a hover device, no disclosure icon is added', () => {
+    simulateHover(true);
+    render(
+      <Tooltip content="Copy">
+        <button type="button">Copy</button>
+      </Tooltip>,
+    );
+    expect(screen.queryByRole('button', { name: 'More info' })).toBeNull();
   });
 });
