@@ -145,7 +145,9 @@ export function calibrateBucket(
   db.run(`UPDATE limit_buckets SET reset_at = ?, calibrated_at = ? WHERE key = ?`, cal.resetAt ?? null, cal.at, key);
   const limit = (db.query(`SELECT limit_units FROM limit_buckets WHERE key = ?`).get(key) as { limit_units: number })
     .limit_units;
-  db.run(`DELETE FROM usage_ledger WHERE bucket_key = ? AND source = 'manual'`, key);
+  // Clear ALL prior events (run + manual) up to calibration time — the manual snapshot
+  // IS the entire history up to this point; keeping older run events would double-count.
+  db.run(`DELETE FROM usage_ledger WHERE bucket_key = ? AND at <= ?`, key, cal.at);
   recordUsageEvent(db, {
     at: cal.at,
     bucketKey: key,

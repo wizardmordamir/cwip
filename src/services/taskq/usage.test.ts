@@ -54,6 +54,22 @@ describe('usage ledger', () => {
     expect(bucketState(db, 'session_5h', NOW)?.used).toBe(20);
   });
 
+  test('calibrate clears prior run events — manual snapshot is the sole history', () => {
+    const db = fresh();
+    // Simulate real drainer usage before calibration.
+    recordRun(db, { at: NOW - 3600 * 1000, model: 'opus', outputTokens: 500 }); // 1h ago
+    recordRun(db, { at: NOW - 1000, model: 'opus', outputTokens: 300 }); // 1s ago
+    // User reads the Claude UI: "79% consumed, resets in 1h" → calibrate.
+    calibrateBucket(db, 'session_5h', {
+      consumedFraction: 0.79,
+      at: NOW,
+      resetAt: NOW + 3600 * 1000,
+    });
+    const s = bucketState(db, 'session_5h', NOW);
+    // Should reflect the calibrated reading exactly (21% left), not double-count old run events.
+    expect(s?.fraction).toBeCloseTo(0.21, 5);
+  });
+
   test('auto-recover after reset_at passes: pre-reset usage excluded, drain unpauses', () => {
     const db = fresh();
     const RESET_AT = NOW + 4 * 3600 * 1000; // resets in 4h
