@@ -8,8 +8,10 @@
  * UI build on these primitives. See `DESIGN.md` for the full system.
  */
 
+export * from './ccusage';
 export * from './claim';
 export * from './clarifications';
+export * from './claudeTelemetry';
 export * from './deps';
 export * from './drainRuns';
 export * from './paths';
