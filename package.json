@@ -73,6 +73,10 @@
       "types": "./dist/services/mongodb/index.d.ts",
       "import": "./dist/services/mongodb/index.js"
     },
+    "./noise": {
+      "types": "./dist/web/noise/index.d.ts",
+      "import": "./dist/web/noise/index.js"
+    },
     "./node": {
       "types": "./dist/web/node/index.d.ts",
       "import": "./dist/web/node/index.js"
