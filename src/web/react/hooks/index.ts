@@ -10,6 +10,7 @@ export * from './useDebouncedValue';
 export * from './useDiscardGuard';
 export * from './useDismissibleItems';
 export * from './useDragReorder';
+export * from './useDragToMove';
 export * from './useEscapeKey';
 export * from './useHasHover';
 export * from './useKeyboardInset';

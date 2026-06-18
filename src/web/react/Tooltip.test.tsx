@@ -169,7 +169,7 @@ describe('Tooltip touch behavior', () => {
   it('empty content adds no disclosure icon (conditional tooltip passthrough)', () => {
     simulateHover(false);
     render(
-      <Tooltip content=''>
+      <Tooltip content="">
         <span>Just text</span>
       </Tooltip>,
     );
