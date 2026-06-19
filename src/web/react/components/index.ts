@@ -30,6 +30,7 @@ export * from './Input';
 export * from './JsonEditor';
 export * from './ModalShell';
 export * from './Page';
+export * from './PageBottom';
 export * from './PageContainer';
 export * from './Pagination';
 export * from './popoverPlacement';
