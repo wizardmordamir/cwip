@@ -18,3 +18,4 @@ export * from './sleep';
 export * from './split';
 export * from './trim';
 export * from './tryOr';
+export * from './uid';
