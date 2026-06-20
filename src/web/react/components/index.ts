@@ -11,6 +11,7 @@ export * from './ButtonLink';
 export * from './badgeTones';
 export * from './Card';
 export * from './Checkbox';
+export * from './Collapsible';
 export * from './ConfirmDialog';
 export * from './CopyButton';
 export * from './DiscardConfirmOverlay';
