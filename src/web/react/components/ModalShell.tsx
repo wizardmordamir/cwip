@@ -174,8 +174,18 @@ export const ModalShell = ({
           </div>
         )}
 
-        {/* Structural scroll region: header/footer stay pinned, this grows and scrolls. */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
+        {/* Structural scroll region: header/footer stay pinned, this grows and scrolls.
+            scroll-padding-bottom keeps a focused field above the on-screen keyboard
+            (--keyboard-inset, published by useKeyboardInset) + the iOS safe area;
+            the keyboard-sized padding-bottom gives the last field room to scroll into.
+            Both terms are 0 on desktop, so the same value is correct everywhere. */}
+        <div
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden"
+          style={{
+            scrollPaddingBottom: 'calc(var(--keyboard-inset, 0px) + env(safe-area-inset-bottom, 0px) + 1.5rem)',
+            paddingBottom: 'var(--keyboard-inset, 0px)',
+          }}
+        >
           <div className={resolveClass(bodyClassName, classNames?.body, unstyled)}>{children}</div>
         </div>
 
