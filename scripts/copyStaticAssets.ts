@@ -7,7 +7,6 @@ import { dirname, resolve } from 'node:path';
  * copied into `dist` by hand. Add a `[src, dist]` pair here for each one.
  */
 const ASSETS: [from: string, to: string][] = [
-  ['src/web/react/theme.css', 'dist/web/react/theme.css'],
   // cwip/styles.css — Tailwind v4 source registration. Its `@source "."` is
   // relative to the shipped dist root, so it must land at `dist/styles.css`.
   ['src/styles.css', 'dist/styles.css'],

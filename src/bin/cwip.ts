@@ -65,7 +65,7 @@ const main = async (argv: string[]): Promise<number> => {
     for (const c of changes)
       process.stdout.write(`  ${c.action.padEnd(8)} ${c.file}${c.detail ? ` (${c.detail})` : ''}\n`);
     process.stdout.write(
-      '\nNext: install deps, then add `@source "../node_modules/cwip/dist/web/react"` to your Tailwind entry.\n',
+      '\nNext: install deps, then add `@source "../node_modules/cursedbelt/dist"` to your Tailwind entry.\n',
     );
     return 0;
   }

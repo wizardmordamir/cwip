@@ -78,12 +78,12 @@ export default defineConfig({
 });
 `;
 
-/** A Tailwind v4 entry that scans cwip/react's shipped classes. */
+/** A Tailwind v4 entry that scans cursedbelt's shipped classes. */
 export const STYLES_CSS = `@import 'tailwindcss';
 
-/* cwip/react ships Tailwind-first components (InfoHint, Toast, the design-system
-   kit). v4 skips node_modules, so opt its built classes back in explicitly. */
-@source '../node_modules/cwip/dist/web/react';
+/* cursedbelt ships Tailwind-first components (the design-system kit). v4 skips
+   node_modules, so opt its built classes back in explicitly. */
+@source '../node_modules/cursedbelt/dist';
 `;
 
 /**

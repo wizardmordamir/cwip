@@ -89,11 +89,6 @@
       "types": "./dist/services/query/index.d.ts",
       "import": "./dist/services/query/index.js"
     },
-    "./react": {
-      "types": "./dist/web/react/index.d.ts",
-      "import": "./dist/web/react/index.js"
-    },
-    "./react/theme.css": "./dist/web/react/theme.css",
     "./schema": {
       "types": "./dist/core/schema/index.d.ts",
       "import": "./dist/core/schema/index.js"
@@ -167,33 +162,22 @@
   "license": "ISC",
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
-    "@happy-dom/global-registrator": "^20.10.3",
     "@playwright/test": "^1.49.0",
-    "@tanstack/react-query": "^5.70.0",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/react": "^16.3.2",
     "@types/bun": "^1.3.14",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
     "ajv": "^8.20.0",
     "cors": "^2.8.6",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
-    "happy-dom": "^20.10.3",
     "hyperformula": "^3.3.0",
     "mongodb": "^7.3.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "recharts": "^3.8.1",
     "typescript": "^6.0.3",
     "unpdf": "^1.6.2",
     "xlsx": "^0.18.5"
   },
   "peerDependencies": {
     "@playwright/test": ">=1.40",
-    "@tanstack/react-query": ">=5",
     "ajv": ">=8",
     "cors": ">=2",
     "exceljs": ">=4",
@@ -203,16 +187,10 @@
     "mssql": ">=10",
     "mysql2": ">=3",
     "pg": ">=8",
-    "react": ">=18",
-    "react-dom": ">=18",
-    "recharts": ">=3",
     "xlsx": ">=0.18"
   },
   "peerDependenciesMeta": {
     "@playwright/test": {
-      "optional": true
-    },
-    "@tanstack/react-query": {
       "optional": true
     },
     "ajv": {
@@ -240,15 +218,6 @@
       "optional": true
     },
     "pg": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    },
-    "react-dom": {
-      "optional": true
-    },
-    "recharts": {
       "optional": true
     },
     "xlsx": {
