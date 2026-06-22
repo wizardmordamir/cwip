@@ -13,6 +13,7 @@ import {
   nextEligibleId,
   reapExpired,
   releaseLease,
+  revertCompletion,
 } from './claim';
 import { depsSatisfied } from './deps';
 import { isTimeRecurDue } from './recurrence';
@@ -386,5 +387,41 @@ describe('updateTask: clearing recur_n with null', () => {
     const t = getTask(db, id)!;
     expect(t.recur_n).toBeNull();
     expect(t.is_template).toBe(1);
+  });
+});
+
+describe('revertCompletion: false-done gate', () => {
+  test('parks the task in on_hold with the note, drops the lease, resets attempts', () => {
+    const id = addTask(db, { title: 'x' });
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    // Simulate a prior failure so attempts > 0 — revert must clear them.
+    failTask(db, id, 'transient', T0, { backoff: { baseMs: 0 } });
+    claim(db, id, { workerId: 'w', nowMs: T0 + 1 });
+    revertCompletion(db, id, 'on_hold', 'false-done: no code landed', T0 + 2);
+    const t = getTask(db, id)!;
+    expect(t.status).toBe('on_hold');
+    expect(t.note).toBe('false-done: no code landed');
+    expect(t.attempts).toBe(0);
+    // Lease must be gone — a reap should find nothing.
+    expect(reapExpired(db, T0 + 1_000_000)).toBe(0);
+  });
+
+  test('needs_input status is accepted', () => {
+    const id = addTask(db, { title: 'y' });
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    revertCompletion(db, id, 'needs_input', 'needs human review', T0 + 1);
+    expect(getTask(db, id)?.status).toBe('needs_input');
+    expect(getTask(db, id)?.note).toBe('needs human review');
+  });
+
+  test('a downstream needs: dep stays blocked after a false-done revert', () => {
+    const upstream = addTask(db, { title: 'up', slug: 'up' }, { at: 'bottom' });
+    const downstream = addTask(db, { title: 'down', needs: ['up'] }, { at: 'bottom' });
+    claim(db, upstream, { workerId: 'w', nowMs: T0 });
+    // False-done: revert upstream instead of completing it.
+    revertCompletion(db, upstream, 'on_hold', 'no code', T0 + 1);
+    // Downstream must still be blocked — upstream never reached 'done'.
+    expect(depsSatisfied(db, downstream)).toBe(false);
+    expect(nextEligibleId(db, T0)).toBeNull();
   });
 });

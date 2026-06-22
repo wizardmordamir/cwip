@@ -318,6 +318,34 @@ export function failHard(db: TaskqDb, taskId: number, reason: string, nowMs: num
   return failTask(db, taskId, reason, nowMs, { permanent: true });
 }
 
+/**
+ * Revert a false-done: drop the lease and park the task in a hold status
+ * (`on_hold` or `needs_input`) with an explanatory note, atomically. This is the
+ * completion-path counterpart to {@link completeTask}/{@link failTask} for when
+ * the done-gate catches a reported success that didn't actually land code or
+ * regressed the build. Dropping the lease is essential — without it the reaper
+ * would later route the still-leased task back through the retry machinery and
+ * undo the hold. Attempts are reset to 0: a false-done is NOT a failure (the
+ * worker ran successfully), so a human re-queue starts with a fresh budget.
+ */
+export function revertCompletion(
+  db: TaskqDb,
+  taskId: number,
+  status: 'on_hold' | 'needs_input',
+  note: string,
+  _nowMs: number,
+): void {
+  withTx(db, () => {
+    db.run(`DELETE FROM leases WHERE task_id = ?`, taskId);
+    db.run(
+      `UPDATE tasks SET status = ?, note = ?, attempts = 0, updated_at = ${NOW} WHERE id = ?`,
+      status,
+      note,
+      taskId,
+    );
+  });
+}
+
 /** Un-claim a task (e.g. its run never started): back to `ready`, lease dropped. */
 export function releaseLease(db: TaskqDb, taskId: number): void {
   withTx(db, () => {
