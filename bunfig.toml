@@ -3,7 +3,7 @@ NODE_ENV=development
 LOGGER_LEVEL=debug
 
 [test]
-preload = ["./scripts/testSetup", "./scripts/domTestEnv"]
+preload = ["./scripts/testSetup"]
 root = './src'
 
 coverage = true
