@@ -104,6 +104,17 @@ export interface TaskRow {
    * re-queued manually or auto-scheduled via recur_interval_ms. 0 = one-shot (done on completion).
    */
   is_saved: number;
+  /**
+   * Failure count for bounded auto-retry. Incremented on each explicit failure
+   * AND each lease-reap; once it reaches the effective max the task parks
+   * terminal `failed` instead of being re-queued.
+   */
+  attempts: number;
+  /**
+   * Per-task retry ceiling; null falls back to the orchestrator's config default.
+   * A failed/reaped task is re-queued (with backoff) while `attempts < max`.
+   */
+  max_attempts: number | null;
   parent_id: number | null;
   /** Why it's on_hold / blocked / needs_input / failed. */
   note: string | null;
@@ -138,6 +149,8 @@ export interface NewTask {
    * require manual re-queuing.
    */
   is_saved?: boolean;
+  /** Per-task retry ceiling (overrides the config default); pass null to clear. */
+  max_attempts?: number | null;
   parent_id?: number;
   note?: string;
   /** `(needs:…)` slugs this task waits on. */

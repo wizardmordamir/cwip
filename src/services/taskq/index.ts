@@ -8,6 +8,7 @@
  * UI build on these primitives. See `DESIGN.md` for the full system.
  */
 
+export * from './backoff';
 export * from './ccusage';
 export * from './claim';
 export * from './clarifications';

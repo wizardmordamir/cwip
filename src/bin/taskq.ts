@@ -57,11 +57,11 @@ Run (orchestrator/worker):
   taskq claim-next --worker W [--worktree S] [--repo R] [--model A,B] [--ttl MS]
   taskq claim <id> --worker W [--worktree S] [--ttl MS]
   taskq complete <id> [--commit SHA] [--summary T] [--duration S] [--started MS]
-  taskq fail <id> --reason T
+  taskq fail <id> --reason T [--permanent] [--max-attempts N]   (auto-retries with backoff unless --permanent)
   taskq release <id> | heartbeat <id> | reap
   taskq init                              create/migrate the DB
 
-Author opts: --body --slug --repo --model --think --group --recur N --needs a,b --note --status
+Author opts: --body --slug --repo --model --think --group --recur N --max-attempts N --needs a,b --note --status
              --fast   --pos top|bottom|before:<id>|after:<id>
 `;
 
@@ -110,6 +110,7 @@ function draftFromFlags(f: Flags): NewTask & TaskPatch {
   if (f.think !== undefined) d.think = str(f, 'think');
   if (f.group !== undefined) d.group_key = str(f, 'group');
   if (f.recur !== undefined) d.recur_n = num(f, 'recur');
+  if (f['max-attempts'] !== undefined) d.max_attempts = num(f, 'max-attempts');
   if (f.note !== undefined) d.note = str(f, 'note');
   if (f.status !== undefined) d.status = str(f, 'status') as NewTask['status'];
   if (f.fast !== undefined) d.fast = true;
@@ -238,8 +239,13 @@ function main(argv: string[]): number {
     case 'fail': {
       const reason = str(flags, 'reason');
       if (!reason) throw new Error('fail needs --reason');
-      failTask(db, id(), reason, now);
-      out({ failed: id() });
+      // Bounded auto-retry by default; `--permanent` parks terminal immediately,
+      // `--max-attempts N` overrides the ceiling for this failure.
+      const outcome = failTask(db, id(), reason, now, {
+        permanent: flags.permanent === true,
+        maxAttempts: num(flags, 'max-attempts'),
+      });
+      out({ id: id(), ...outcome });
       return 0;
     }
 

@@ -231,6 +231,20 @@ const MIGRATIONS: Migration[] = [
       db.exec(`CREATE INDEX idx_tasks_serial_group ON tasks(serial_group)`);
     },
   },
+  {
+    // Bounded auto-retry with backoff (worker resilience). A failed/reaped task
+    // is re-queued up to `max_attempts` times before parking terminal `failed`:
+    //   attempts     — failures so far (incremented on explicit failure AND lease-reap).
+    //   max_attempts — per-task override of the config default (null = use default).
+    // The backoff "not eligible until" timestamp reuses the existing recur_next_at
+    // column (the claim query honors it across all eligibility branches) and the
+    // failure reason reuses `note` — so no new scheduling/eligibility plumbing.
+    version: 10,
+    up: (db) => {
+      db.exec(`ALTER TABLE tasks ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0`);
+      db.exec(`ALTER TABLE tasks ADD COLUMN max_attempts INTEGER`);
+    },
+  },
 ];
 
 /** The latest schema version (the version the engine expects). */

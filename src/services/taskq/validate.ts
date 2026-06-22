@@ -50,6 +50,9 @@ export function validateNewTask(draft: NewTask): string[] {
   if (draft.is_template && (draft.recur_n != null || draft.recur_interval_ms != null)) {
     errs.push('a template cannot have a recurrence schedule');
   }
+  if (draft.max_attempts != null && (!Number.isInteger(draft.max_attempts) || draft.max_attempts < 1)) {
+    errs.push('max_attempts must be a positive integer');
+  }
 
   return errs;
 }

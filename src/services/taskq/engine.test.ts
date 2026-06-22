@@ -6,6 +6,8 @@ import {
   completedCount,
   completeTask,
   DEFAULT_LEASE_TTL_MS,
+  DEFAULT_MAX_ATTEMPTS,
+  failHard,
   failTask,
   heartbeat,
   nextEligibleId,
@@ -174,12 +176,16 @@ describe('lifecycle: complete / fail / release / reap', () => {
     expect(isTimeRecurDue(after, T0 + 1 + INTERVAL)).toBe(true);
   });
 
-  test('fail sets failed + reason; release returns to ready', () => {
+  test('fail auto-retries (back to ready + reason) by default; release returns to ready', () => {
     const id = addTask(db, { title: 'x' });
     claim(db, id, { workerId: 'w', nowMs: T0 });
-    failTask(db, id, 'needs live creds', T0);
-    expect(getTask(db, id)?.status).toBe('failed');
+    // A single transient failure is RE-QUEUED, not terminal — attempts < default max.
+    const outcome = failTask(db, id, 'needs live creds', T0);
+    expect(outcome.terminal).toBe(false);
+    expect(outcome.status).toBe('ready');
+    expect(getTask(db, id)?.status).toBe('ready');
     expect(getTask(db, id)?.note).toBe('needs live creds');
+    expect(getTask(db, id)?.attempts).toBe(1);
 
     const id2 = addTask(db, { title: 'y' });
     claim(db, id2, { workerId: 'w', nowMs: T0 });
@@ -187,7 +193,7 @@ describe('lifecycle: complete / fail / release / reap', () => {
     expect(getTask(db, id2)?.status).toBe('ready');
   });
 
-  test('reapExpired reclaims stranded leases; heartbeat protects a live one', () => {
+  test('reapExpired reclaims stranded leases (counts an attempt); heartbeat protects a live one', () => {
     const stranded = addTask(db, { title: 'stranded' });
     const alive = addTask(db, { title: 'alive' });
     claim(db, stranded, { workerId: 'w', nowMs: T0, ttlMs: 1000 });
@@ -196,12 +202,114 @@ describe('lifecycle: complete / fail / release / reap', () => {
     heartbeat(db, alive, later); // extends well past `later`
     const reaped = reapExpired(db, later);
     expect(reaped).toBe(1);
+    // A reaped task is re-queued like any transient failure: ready + attempts incremented.
     expect(getTask(db, stranded)?.status).toBe('ready');
+    expect(getTask(db, stranded)?.attempts).toBe(1);
     expect(getTask(db, alive)?.status).toBe('claimed');
+    expect(getTask(db, alive)?.attempts).toBe(0);
   });
 
   test('default lease TTL is exported and positive', () => {
     expect(DEFAULT_LEASE_TTL_MS).toBeGreaterThan(0);
+  });
+});
+
+describe('bounded auto-retry with backoff (resilience)', () => {
+  test('a transient failure re-queues with a future backoff that holds it out of the pool', () => {
+    const id = addTask(db, { title: 'flaky' });
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    const out = failTask(db, id, 'transient blip', T0, { backoff: { baseMs: 60_000, jitter: 0 } });
+    expect(out.status).toBe('ready');
+    expect(out.terminal).toBe(false);
+    expect(out.attempts).toBe(1);
+    expect(out.retryAt).toBe(T0 + 60_000);
+    expect(getTask(db, id)?.recur_next_at).toBe(T0 + 60_000);
+    // Not eligible during the backoff window…
+    expect(nextEligibleId(db, T0)).toBeNull();
+    expect(nextEligibleId(db, T0 + 59_000)).toBeNull();
+    // …but eligible the moment it elapses.
+    expect(nextEligibleId(db, T0 + 60_000)).toBe(id);
+  });
+
+  test('exhausting attempts parks terminal failed; dependents stay blocked, independents stay eligible', () => {
+    const root = addTask(db, { title: 'root', slug: 'root' }, { at: 'bottom' });
+    const dependent = addTask(db, { title: 'dependent', needs: ['root'] }, { at: 'bottom' });
+    const indep = addTask(db, { title: 'indep' }, { at: 'bottom' });
+    // Zero backoff → each retry is immediately eligible, so we can burn the budget in one test.
+    const opts = { maxAttempts: 3, backoff: { baseMs: 0 } };
+    for (let i = 1; i <= 3; i++) {
+      claim(db, root, { workerId: 'w', nowMs: T0 });
+      const out = failTask(db, root, 'always fails', T0, opts);
+      if (i < 3) {
+        expect(out.terminal).toBe(false);
+        expect(getTask(db, root)?.status).toBe('ready');
+      } else {
+        expect(out.terminal).toBe(true);
+      }
+    }
+    expect(getTask(db, root)?.status).toBe('failed');
+    expect(getTask(db, root)?.attempts).toBe(3);
+    // Failure isolation: the dependent is blocked (root never reached done); the
+    // independent task is the next eligible pick — the queue keeps flowing.
+    expect(depsSatisfied(db, dependent)).toBe(false);
+    expect(nextEligibleId(db, T0)).toBe(indep);
+  });
+
+  test('failHard / permanent:true park terminal on the first failure (no retries burned)', () => {
+    const id = addTask(db, { title: 'impossible' });
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    const out = failHard(db, id, 'needs a human decision', T0);
+    expect(out.terminal).toBe(true);
+    expect(out.status).toBe('failed');
+    expect(getTask(db, id)?.status).toBe('failed');
+    expect(getTask(db, id)?.attempts).toBe(1);
+
+    const id2 = addTask(db, { title: 'dead-end' });
+    claim(db, id2, { workerId: 'w', nowMs: T0 });
+    expect(failTask(db, id2, 'x', T0, { permanent: true }).terminal).toBe(true);
+    expect(getTask(db, id2)?.status).toBe('failed');
+  });
+
+  test('per-task max_attempts overrides the config default', () => {
+    const id = addTask(db, { title: 'once', max_attempts: 1 });
+    expect(getTask(db, id)?.max_attempts).toBe(1);
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    // max_attempts=1 → the very first failure is already terminal.
+    const out = failTask(db, id, 'boom', T0);
+    expect(out.maxAttempts).toBe(1);
+    expect(out.terminal).toBe(true);
+    expect(getTask(db, id)?.status).toBe('failed');
+  });
+
+  test('a repeatedly-reaped (hanging) task increments attempts and eventually parks', () => {
+    const id = addTask(db, { title: 'hangs' });
+    const opts = { maxAttempts: 2, backoff: { baseMs: 0 } };
+    // First hang: claimed, lease expires, reap re-queues it (attempt 1).
+    claim(db, id, { workerId: 'w', nowMs: T0, ttlMs: 1 });
+    reapExpired(db, T0 + 10, opts);
+    expect(getTask(db, id)?.status).toBe('ready');
+    expect(getTask(db, id)?.attempts).toBe(1);
+    // Second hang: reap exhausts the ceiling → terminal failed (no infinite loop).
+    claim(db, id, { workerId: 'w', nowMs: T0 + 10, ttlMs: 1 });
+    reapExpired(db, T0 + 20, opts);
+    expect(getTask(db, id)?.status).toBe('failed');
+    expect(getTask(db, id)?.attempts).toBe(2);
+  });
+
+  test('a successful completion resets the attempt counter (fresh budget for recurring runs)', () => {
+    const INTERVAL = 60 * 60_000;
+    const id = addTask(db, { title: 'recurring', is_saved: true, recur_interval_ms: INTERVAL });
+    // Fail once (attempt 1), then claim + complete successfully.
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    failTask(db, id, 'transient', T0, { backoff: { baseMs: 0 } });
+    expect(getTask(db, id)?.attempts).toBe(1);
+    claim(db, id, { workerId: 'w', nowMs: T0 + 1 });
+    completeTask(db, id, {}, T0 + 2);
+    expect(getTask(db, id)?.attempts).toBe(0);
+  });
+
+  test('DEFAULT_MAX_ATTEMPTS is exported and bounded', () => {
+    expect(DEFAULT_MAX_ATTEMPTS).toBeGreaterThanOrEqual(2);
   });
 });
 
