@@ -93,10 +93,14 @@ export const STYLES_CSS = `@import 'tailwindcss';
  */
 export const SCRIPT_BUILD_CACHE_TS = `#!/usr/bin/env bun
 // Incremental build cache: skips a build/lint when its inputs are unchanged.
-// Usage: buildCache <check|save|clean> [dir]
+// Usage: buildCache <check|save|clean> [dir] [--force]
 //   check <dir>  exit 0 = unchanged (skip), exit 1 = changed (build needed)
 //   save  <dir>  record the manifest after a successful build
 //   clean [dir]  drop one target's manifest, or the whole cache
+// Force a real rebuild (never trust a cached green): pass --force/--no-cache, or
+// set CWIP_BUILD_NO_CACHE=1 to bypass the cache for a whole process — do this at
+// any green gate and across every merge/promotion boundary, so a stale-cache
+// skip can't certify broken output as green. Inner-loop builds stay cached.
 import { runBuildCacheCli } from 'cwip/build';
 
 // Add app-specific config here, e.g. { extraDirs: ['shared'] } for a symlinked
@@ -118,6 +122,9 @@ export const PACKAGE_SCRIPTS: Record<string, string> = {
   dev: 'vite',
   build: 'bun scripts/buildCache check . || (vite build && bun scripts/buildCache save .)',
   clean: 'bun scripts/withTimeout 3000 rm -rf dist',
+  // Bust the build cache so the next build is forced — run it across merge /
+  // promotion boundaries (a cached green must never survive a merge).
+  'remove:hashes': 'bun scripts/buildCache clean',
   tsc: 'tsc --noEmit',
   check: 'biome check ./src && bun run tsc',
   fix: 'biome check --write --unsafe ./src',

@@ -52,3 +52,17 @@ export const DEFAULT_OUTPUT_DIR_NAME = 'dist';
 
 /** Subpath under `node_modules` where manifests live by default. */
 export const DEFAULT_MANIFEST_SUBDIR = 'node_modules/.cache/cwip-build';
+
+/**
+ * Env var that bypasses the cache: when set (truthy via `boolEnv`) a `check`
+ * ALWAYS reports "build needed", so a build can never be skipped from a stale
+ * manifest. Set it for the scope of a green gate or across a merge/promotion
+ * boundary — where a cached green must never be trusted — so "green" only ever
+ * means "actually rebuilt". The cache still warms the inner loop (`save` keeps
+ * recording the fresh manifest); this only forces the *skip decision* off.
+ * Equivalent to passing `--force` / `--no-cache` to a single `check`.
+ */
+export const NO_CACHE_ENV = 'CWIP_BUILD_NO_CACHE';
+
+/** Flags that force a single `check` to rebuild, regardless of the cache. */
+export const FORCE_FLAGS = ['--force', '--no-cache', '-f'] as const;
