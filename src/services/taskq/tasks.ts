@@ -6,7 +6,7 @@
 
 import { withTx } from './tx';
 import type { HoldDisposition, NewTask, TaskPatch, TaskqDb, TaskRow, TaskStatus } from './types';
-import { isParkedStatus } from './types';
+import { AUTO_MODEL, isParkedStatus } from './types';
 import { assertValidNewTask } from './validate';
 
 /**
@@ -101,6 +101,10 @@ export function addTask(db: TaskqDb, draft: NewTask, position: Position = { at: 
     // A task created directly in a parked status still gets a disposition (the
     // contract — never a silent strand); a non-parked status carries none.
     const disposition = dispositionFor(status, draft.hold_disposition);
+    // No explicit model ⇒ default to the `auto` marker so the task gets auto-tiered
+    // (classify-on-eligible) instead of matching every fleet untiered. An empty
+    // string means the same "unset" intent. An explicit alias is kept as-is.
+    const model = draft.model && draft.model !== '' ? draft.model : AUTO_MODEL;
     const res = db.run(
       `INSERT INTO tasks (ord, status, slug, title, body, repo, model, think, fast, group_key, serial_group, recur_n, recur_interval_ms, is_template, is_saved, max_attempts, noop_ok, parent_id, note, hold_disposition, resolver_ref)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -110,7 +114,7 @@ export function addTask(db: TaskqDb, draft: NewTask, position: Position = { at: 
       draft.title.trim(),
       draft.body ?? null,
       draft.repo ?? null,
-      draft.model ?? null,
+      model,
       draft.think ?? null,
       draft.fast ? 1 : 0,
       draft.group_key ?? null,

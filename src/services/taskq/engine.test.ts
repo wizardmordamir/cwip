@@ -33,9 +33,11 @@ import {
 } from './tasks';
 import {
   AUTHORABLE_STATUSES,
+  AUTO_MODEL,
   HOLD_DISPOSITIONS,
   isHoldDisposition,
   isParkedStatus,
+  needsTiering,
   PARKED_STATUSES,
   type TaskqDb,
 } from './types';
@@ -154,6 +156,74 @@ describe('eligibility + claim', () => {
         .sort(),
     ).toEqual(['g1', 'g2']);
     expect(listTasks(db, { status: 'ready' }).map((t) => t.title)).toEqual(['other']);
+  });
+});
+
+describe('auto-tier on claim (classify-on-eligible)', () => {
+  test('a new task defaults to the auto marker', () => {
+    const id = addTask(db, { title: 'whatever' });
+    expect(getTask(db, id)?.model).toBe(AUTO_MODEL);
+    expect(needsTiering(getTask(db, id)?.model)).toBe(true);
+  });
+
+  test('claimNext assesses an auto task BEFORE claiming → it becomes explicit', () => {
+    const id = addTask(db, { title: 'Write the README docs' }); // auto → classifies light
+    const claimed = claimNext(db, { workerId: 'w', nowMs: T0 });
+    expect(claimed?.id).toBe(id);
+    // The assessed tier is written before the claim returns — explicit now.
+    expect(claimed?.model).toBe('sonnet');
+    expect(claimed?.think).toBe('medium');
+    expect(getTask(db, id)?.model).toBe('sonnet');
+  });
+
+  test('an explicit task is claimed verbatim — never re-assessed', () => {
+    const id = addTask(db, { title: 'Update the README docs', model: 'opus', think: 'low' });
+    const claimed = claimNext(db, { workerId: 'w', nowMs: T0 });
+    expect(claimed?.id).toBe(id);
+    expect(claimed?.model).toBe('opus'); // owner's pin respected
+    expect(claimed?.think).toBe('low');
+  });
+
+  test('direct claim() also tiers the claimed task', () => {
+    const id = addTask(db, { title: 'design the security schema' }); // auto → heavy
+    expect(claim(db, id, { workerId: 'w', nowMs: T0 })).toBe(true);
+    expect(getTask(db, id)?.model).toBe('opus');
+    expect(getTask(db, id)?.think).toBe('max');
+  });
+
+  test('autoTier:false claims verbatim (leaves the marker)', () => {
+    const id = addTask(db, { title: 'Write the README docs' });
+    claimNext(db, { workerId: 'w', nowMs: T0, autoTier: false });
+    expect(getTask(db, id)?.model).toBe(AUTO_MODEL);
+  });
+
+  test('tier routing: an auto task assessed heavy is left for the opus fleet, not claimed by a sonnet fleet', () => {
+    const heavy = addTask(db, { title: 'design the auth security engine' }, { at: 'bottom' }); // → opus
+    const light = addTask(db, { title: 'fix a small-fix typo' }, { at: 'bottom' }); // → sonnet
+
+    // The sonnet fleet skips the (now-explicit) opus task and claims the sonnet one.
+    const sonnetClaim = claimNext(db, { workerId: 'w1', nowMs: T0, filters: { models: ['sonnet'] } });
+    expect(sonnetClaim?.id).toBe(light);
+    expect(sonnetClaim?.model).toBe('sonnet');
+    // The heavy task was assessed (→ opus) but left ready for the right fleet.
+    const heavyRow = getTask(db, heavy)!;
+    expect(heavyRow.status).toBe('ready');
+    expect(heavyRow.model).toBe('opus');
+
+    // The opus fleet then claims it.
+    const opusClaim = claimNext(db, { workerId: 'w2', nowMs: T0, filters: { models: ['opus'] } });
+    expect(opusClaim?.id).toBe(heavy);
+  });
+
+  test('an injected classifier overrides the heuristic on the claim path', () => {
+    const id = addTask(db, { title: 'Write the README docs' }); // heuristic would say sonnet
+    const claimed = claimNext(db, {
+      workerId: 'w',
+      nowMs: T0,
+      classify: () => ({ model: 'haiku', think: 'low', confidence: 'heuristic', reason: 'pinned' }),
+    });
+    expect(claimed?.id).toBe(id);
+    expect(claimed?.model).toBe('haiku');
   });
 });
 

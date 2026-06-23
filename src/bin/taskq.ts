@@ -12,6 +12,8 @@ import { dirname, join } from 'node:path';
 import { applyRecommendedPragmas } from '../services/sqlite';
 import {
   addTask,
+  autoTierEligible,
+  autoTierTask,
   claim,
   claimNext,
   completeTask,
@@ -62,8 +64,9 @@ Author:
   taskq rm <id>
 
 Run (orchestrator/worker):
-  taskq claim-next --worker W [--worktree S] [--repo R] [--model A,B] [--ttl MS]
-  taskq claim <id> --worker W [--worktree S] [--ttl MS]
+  taskq claim-next --worker W [--worktree S] [--repo R] [--model A,B] [--ttl MS] [--no-auto-tier]
+  taskq claim <id> --worker W [--worktree S] [--ttl MS] [--no-auto-tier]
+  taskq tier <id> | tier --all [--repo R]  auto-tier (classify-on-eligible) an unset/auto task → explicit model+think
   taskq complete <id> [--commit SHA] [--summary T] [--duration S] [--started MS]
   taskq fail <id> --reason T [--permanent] [--max-attempts N]   (auto-retries with backoff unless --permanent)
   taskq release <id> | heartbeat <id> | reap
@@ -73,6 +76,9 @@ Author opts: --body --slug --repo --model --think --group --recur N --max-attemp
              --fast   --noop-ok   --pos top|bottom|before:<id>|after:<id>
   (--noop-ok marks an audit/check/review task that may legitimately land no code — the
    false-done gate then accepts a no-op completion; --noop-ok false clears it.)
+  (--model auto, or no --model, leaves the tier UNSET → the worker auto-tiers it the
+   moment it's eligible, then writes back an explicit model+think. Re-set to auto to
+   force a re-assessment; an explicit alias is always respected.)
 `;
 
 type Flags = Record<string, string | boolean>;
@@ -231,6 +237,8 @@ function main(argv: string[]): number {
         ttlMs: num(flags, 'ttl'),
         nowMs: now,
         filters: { repo: str(flags, 'repo'), models: modelFilter(flags) },
+        // Classify-on-eligible is ON by default; `--no-auto-tier` claims verbatim.
+        autoTier: flags['no-auto-tier'] !== true,
       });
       out(task);
       return 0;
@@ -244,9 +252,26 @@ function main(argv: string[]): number {
         worktree: str(flags, 'worktree') ?? null,
         ttlMs: num(flags, 'ttl'),
         nowMs: now,
+        autoTier: flags['no-auto-tier'] !== true,
       });
       out({ claimed: ok, task: ok ? getTask(db, id()) : null });
       return ok ? 0 : 1;
+    }
+
+    // Classify-on-eligible, run by hand: assess an unset/`auto` task into an
+    // explicit {model, think}. With an <id>, tiers that one task; with --all, sweeps
+    // every currently-eligible unassessed task. An already-explicit task is left
+    // untouched (idempotent). Normally automatic at claim time — this is for
+    // previewing/forcing the decision (e.g. after re-setting a task to `auto`).
+    case 'tier': {
+      if (flags.all === true) {
+        const tiered = autoTierEligible(db, now, { repo: str(flags, 'repo') });
+        out({ tiered });
+        return 0;
+      }
+      const verdict = autoTierTask(db, id());
+      out({ id: id(), verdict, task: getTask(db, id()) });
+      return 0;
     }
 
     case 'complete':

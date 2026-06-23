@@ -119,7 +119,7 @@ test('ls --json round-trips a body with special characters (quotes, newlines, ba
   const id = (JSON.parse(run('add', 'special chars task', '--body', safePart).stdout) as { id: number }).id;
 
   // Inject low control chars directly into the SQLite DB, bypassing CLI arg restrictions.
-  const controlBody = safePart + '\x01\x02\x03\x1f';
+  const controlBody = `${safePart}\x01\x02\x03\x1f`;
   const dbPath = join(dir, 'taskq.sqlite');
   const injectResult = Bun.spawnSync(
     [

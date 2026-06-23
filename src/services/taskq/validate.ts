@@ -5,7 +5,7 @@
  */
 
 import type { NewTask } from './types';
-import { MODEL_ALIASES, TASK_SLUG_PATTERN, TASK_STATUSES, THINK_LEVELS } from './types';
+import { MODEL_VALUES, TASK_SLUG_PATTERN, TASK_STATUSES, THINK_LEVELS } from './types';
 
 export function validateNewTask(draft: NewTask): string[] {
   const errs: string[] = [];
@@ -29,8 +29,10 @@ export function validateNewTask(draft: NewTask): string[] {
   if (draft.slug && (draft.needs ?? []).includes(draft.slug)) {
     errs.push('a task cannot depend on its own id');
   }
-  if (draft.model != null && draft.model !== '' && !(MODEL_ALIASES as readonly string[]).includes(draft.model)) {
-    errs.push(`unknown model alias "${draft.model}" (use ${MODEL_ALIASES.join(', ')})`);
+  // `auto` is accepted alongside the real aliases — it's the "assess me" sentinel
+  // (classify-on-eligible writes back an explicit alias). See MODEL_VALUES.
+  if (draft.model != null && draft.model !== '' && !(MODEL_VALUES as readonly string[]).includes(draft.model)) {
+    errs.push(`unknown model alias "${draft.model}" (use ${MODEL_VALUES.join(', ')})`);
   }
   if (draft.think != null && draft.think !== '' && !(THINK_LEVELS as string[]).includes(draft.think)) {
     errs.push(`unknown thinking level "${draft.think}" (use ${THINK_LEVELS.join(', ')})`);

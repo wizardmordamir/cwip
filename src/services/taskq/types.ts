@@ -119,6 +119,31 @@ export const THINK_LEVELS: ThinkLevel[] = ['off', 'low', 'medium', 'high', 'max'
 export const MODEL_ALIASES = ['opus', 'opus-1m', 'sonnet', 'haiku', 'fable'] as const;
 export type ModelAlias = (typeof MODEL_ALIASES)[number];
 
+/**
+ * The "assess me" sentinel for the `model` column — a task tagged `auto` (or left
+ * unset) has NOT yet had its tier chosen; the engine auto-tiers it the moment it
+ * becomes eligible (classify-on-eligible, before a worker/fleet claims it) and
+ * writes back an EXPLICIT {@link ModelAlias} + think level. That explicit value IS
+ * the "already-assessed" marker — there is no separate flag and no recurring
+ * re-scan; assessment is idempotent BY CONSTRUCTION (an explicit model is never
+ * re-evaluated). New tasks default to `auto`; the owner forces a re-assessment by
+ * setting the model back to `auto`. A valid `model` input but NOT a real fleet
+ * tier — it deliberately is NOT in {@link MODEL_ALIASES} (the fleet-tier list).
+ */
+export const AUTO_MODEL = 'auto';
+
+/** Every accepted `model` value: a real fleet tier OR the {@link AUTO_MODEL} sentinel. */
+export const MODEL_VALUES = [...MODEL_ALIASES, AUTO_MODEL] as const;
+
+/**
+ * True when `model` still needs tiering — it's unset (null/empty, e.g. a legacy
+ * row) or the explicit {@link AUTO_MODEL} sentinel. The single predicate behind
+ * "only auto/null is assessed; an explicit alias is respected and never touched."
+ */
+export function needsTiering(model: string | null | undefined): boolean {
+  return model == null || model === '' || model === AUTO_MODEL;
+}
+
 /** A slug id / group key: `[A-Za-z0-9._-]`. */
 export const TASK_SLUG_PATTERN = /^[A-Za-z0-9._-]+$/;
 

@@ -1,8 +1,9 @@
+import { applyTier, type TierClassifier, tierVerdictFor } from './autoTier';
 import { type BackoffOpts, backoffMs } from './backoff';
 import { nextRecurAt } from './recurrence';
 import { getTask } from './tasks';
 import { withTx } from './tx';
-import type { ClaimFilters, HoldDisposition, TaskqDb, TaskRow } from './types';
+import { AUTO_MODEL, type ClaimFilters, type HoldDisposition, needsTiering, type TaskqDb, type TaskRow } from './types';
 
 const NOW = `strftime('%Y-%m-%dT%H:%M:%fZ','now')`;
 /** Default lease TTL: a worker must heartbeat within this or be reaped. */
@@ -16,6 +17,15 @@ export interface ClaimOpts {
   ttlMs?: number;
   nowMs: number;
   filters?: ClaimFilters;
+  /**
+   * Classify-on-eligible: auto-tier an unset/`auto`-model task into an explicit
+   * {model, think} BEFORE claiming it (default ON). The assessed value is written
+   * back, so it's a one-time decision — an already-explicit task is untouched.
+   * Set false to claim verbatim (e.g. a test that pins the tier itself).
+   */
+  autoTier?: boolean;
+  /** Optional override for the tiering heuristic (see {@link TierClassifier}). */
+  classify?: TierClassifier;
 }
 
 /** Count of completed tasks (drives recurring-task cooldown). */
@@ -32,8 +42,12 @@ function eligibilityClause(filters: ClaimFilters | undefined): { sql: string; pa
     params.push(filters.repo);
   }
   if (filters?.models?.length) {
-    // Untagged tasks (model IS NULL) match any tier; tagged tasks must be in the tier.
-    clauses.push(`(t.model IS NULL OR t.model IN (${filters.models.map(() => '?').join(',')}))`);
+    // Untagged (model IS NULL) and not-yet-assessed (`auto`) tasks match ANY tier —
+    // they're candidates for every fleet until classify-on-eligible assigns a real
+    // tier at claim time; a tagged task must be in the tier.
+    clauses.push(
+      `(t.model IS NULL OR t.model = '${AUTO_MODEL}' OR t.model IN (${filters.models.map(() => '?').join(',')}))`,
+    );
     params.push(...filters.models);
   }
   // Deps satisfied: no needs_slug points at a non-done task.
@@ -116,6 +130,34 @@ function insertLease(db: TaskqDb, taskId: number, opts: ClaimOpts): void {
 }
 
 /**
+ * Auto-tier a task that still needs it, in-place (no transaction of its own — the
+ * caller is already inside the claim txn). No-op when tiering is disabled or the
+ * task already carries an explicit tier (the respect-explicit / idempotency gate).
+ */
+function autoTierIfNeeded(db: TaskqDb, taskId: number, opts: ClaimOpts): void {
+  if (opts.autoTier === false) return;
+  const task = getTask(db, taskId);
+  if (!task || !needsTiering(task.model)) return;
+  const verdict = tierVerdictFor(task, { classify: opts.classify });
+  if (verdict) applyTier(db, taskId, verdict);
+}
+
+/** Claim every other `ready` member of `task`'s `(group:G)` for the same worker. */
+function claimGroupMembers(db: TaskqDb, task: TaskRow, opts: ClaimOpts): void {
+  if (!task.group_key) return;
+  const members = db
+    .query(`SELECT id FROM tasks WHERE group_key = ? AND status = 'ready' AND id <> ?`)
+    .all(task.group_key, task.id) as { id: number }[];
+  for (const m of members) {
+    db.run(
+      `UPDATE tasks SET status = 'claimed', hold_disposition = NULL, resolver_ref = NULL, updated_at = ${NOW} WHERE id = ?`,
+      m.id,
+    );
+    insertLease(db, m.id, opts);
+  }
+}
+
+/**
  * Atomically claim task `id` if still `ready` (CAS). Returns true on success.
  * Also claims any other `ready` member of the same `(group:G)` for this worker.
  */
@@ -128,48 +170,102 @@ export function claim(db: TaskqDb, id: number, opts: ClaimOpts): boolean {
     if (res.changes === 0) return false; // lost the race / no longer ready
     insertLease(db, id, opts);
 
+    // Classify-on-claim: a directly-claimed task only reaches here once it's ours,
+    // so tiering after the CAS records the assessed tier for exactly the task that
+    // runs (a failed CAS on a draft/non-ready task never tiers it).
+    autoTierIfNeeded(db, id, opts);
+
     const task = getTask(db, id);
-    if (task?.group_key) {
-      const members = db
-        .query(`SELECT id FROM tasks WHERE group_key = ? AND status = 'ready' AND id <> ?`)
-        .all(task.group_key, id) as { id: number }[];
-      for (const m of members) {
-        db.run(
-          `UPDATE tasks SET status = 'claimed', hold_disposition = NULL, resolver_ref = NULL, updated_at = ${NOW} WHERE id = ?`,
-          m.id,
-        );
-        insertLease(db, m.id, opts);
-      }
-    }
+    if (task) claimGroupMembers(db, task, opts);
     return true;
   });
 }
 
-/** Pick + claim the next eligible task in one atomic step. Returns it, or null. */
+/**
+ * Pick + claim the next eligible task in one atomic step. Returns it, or null.
+ *
+ * Classify-on-eligible: an unset/`auto`-model task is assessed into an explicit
+ * {model, think} BEFORE it's claimed (default ON; see {@link ClaimOpts.autoTier}),
+ * so the tier filter routes it to the right fleet. If a candidate's freshly-chosen
+ * tier isn't in THIS fleet's `models` filter it belongs to another fleet — it's
+ * left explicit (so it's now visible to the right tier) and the loop advances to
+ * the next candidate. The loop is bounded: each pass either claims, returns null,
+ * or makes exactly one more task explicit (shrinking the unassessed-candidate set).
+ */
 export function claimNext(db: TaskqDb, opts: ClaimOpts): TaskRow | null {
   return withTx(db, () => {
-    const id = nextEligibleId(db, opts.nowMs, opts.filters);
-    if (id == null) return null;
-    const res = db.run(
-      `UPDATE tasks SET status = 'claimed', hold_disposition = NULL, resolver_ref = NULL, updated_at = ${NOW} WHERE id = ? AND status = 'ready'`,
-      id,
-    );
-    if (res.changes === 0) return null;
-    insertLease(db, id, opts);
-    const task = getTask(db, id);
-    if (task?.group_key) {
-      const members = db
-        .query(`SELECT id FROM tasks WHERE group_key = ? AND status = 'ready' AND id <> ?`)
-        .all(task.group_key, id) as { id: number }[];
-      for (const m of members) {
-        db.run(
-          `UPDATE tasks SET status = 'claimed', hold_disposition = NULL, resolver_ref = NULL, updated_at = ${NOW} WHERE id = ?`,
-          m.id,
-        );
-        insertLease(db, m.id, opts);
+    const wantModels = opts.filters?.models;
+    while (true) {
+      const id = nextEligibleId(db, opts.nowMs, opts.filters);
+      if (id == null) return null;
+
+      // nextEligibleId only returns ready, eligible tasks (never a draft/hold), so
+      // we only ever assess a task that is about to run for SOME fleet.
+      if (opts.autoTier !== false) {
+        const candidate = getTask(db, id);
+        if (candidate && needsTiering(candidate.model)) {
+          const verdict = tierVerdictFor(candidate, { classify: opts.classify });
+          if (verdict) {
+            applyTier(db, id, verdict);
+            // Assessed into a tier this fleet doesn't serve → re-pick (it's now
+            // explicit, so the next nextEligibleId excludes it for this filter).
+            if (wantModels?.length && !wantModels.includes(verdict.model)) continue;
+          }
+        }
+      }
+
+      const res = db.run(
+        `UPDATE tasks SET status = 'claimed', hold_disposition = NULL, resolver_ref = NULL, updated_at = ${NOW} WHERE id = ? AND status = 'ready'`,
+        id,
+      );
+      if (res.changes === 0) return null;
+      insertLease(db, id, opts);
+      const task = getTask(db, id);
+      if (task) claimGroupMembers(db, task, opts);
+      return task;
+    }
+  });
+}
+
+/**
+ * Classify-on-eligible as a standalone sweep: assign an explicit tier to EVERY
+ * currently-eligible task that still needs one (unset/`auto` model), in priority
+ * order, in one transaction. The drainer's optional pre-claim step — call it (e.g.
+ * with a model-backed `classify` to refine ambiguous cases) before claiming so the
+ * tier filter can route freshly-assessed tasks. Returns how many were tiered.
+ *
+ * Skips templates and anything not `ready`/eligible (deps unmet, serial-blocked,
+ * inside a backoff window) — so it never assesses a task that can't run, keeping
+ * assessment lazy. Idempotent: an explicit task is never re-tiered.
+ */
+export function autoTierEligible(
+  db: TaskqDb,
+  nowMs: number,
+  opts: { repo?: string; classify?: TierClassifier } = {},
+): number {
+  return withTx(db, () => {
+    const { sql, params } = eligibilityClause(opts.repo ? { repo: opts.repo } : undefined);
+    const notBefore = `(t.recur_next_at IS NULL OR t.recur_next_at <= ?)`;
+    const rows = db
+      .query(
+        `SELECT t.id FROM tasks t
+          WHERE t.status = 'ready' AND t.is_template = 0
+            AND (t.model IS NULL OR t.model = '${AUTO_MODEL}')
+            AND ${notBefore}${sql}
+          ORDER BY t.ord ASC, t.id ASC`,
+      )
+      .all(nowMs, ...params) as { id: number }[];
+    let tiered = 0;
+    for (const { id } of rows) {
+      const task = getTask(db, id);
+      if (!task) continue;
+      const verdict = tierVerdictFor(task, { classify: opts.classify });
+      if (verdict) {
+        applyTier(db, id, verdict);
+        tiered++;
       }
     }
-    return task;
+    return tiered;
   });
 }
 
