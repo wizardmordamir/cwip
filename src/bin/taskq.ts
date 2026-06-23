@@ -337,12 +337,42 @@ function main(argv: string[]): number {
       // (no auto-resolver). Overrides --status (it's a disposition filter, not a status one).
       const rows = flags['needs-owner'] ? listNeedsOwner(db) : listTasks(db, status ? { status } : {});
       if (flags.json) out(rows.map(withRetryAt));
-      else
+      else {
+        // Compact local timestamp (no ms/seconds) + relative age, so progress-vs-stall is visible at a glance.
+        const p2 = (n: number) => String(n).padStart(2, '0');
+        const stamp = (iso?: string) => {
+          const d = iso ? new Date(iso) : null;
+          if (!d || Number.isNaN(d.getTime())) return '—          ';
+          return `${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+        };
+        const ago = (iso?: string) => {
+          const d = iso ? new Date(iso) : null;
+          if (!d || Number.isNaN(d.getTime())) return '?';
+          const s = Math.max(0, Math.round((Date.now() - d.getTime()) / 1000));
+          if (s < 60) return `${s}s`;
+          const m = Math.floor(s / 60);
+          if (m < 60) return `${m}m`;
+          const h = Math.floor(m / 60);
+          if (h < 24) return m % 60 ? `${h}h${m % 60}m` : `${h}h`;
+          const dd = Math.floor(h / 24);
+          return h % 24 ? `${dd}d${h % 24}h` : `${dd}d`;
+        };
         for (const t of rows) {
           // Surface the disposition inline so a hold's owner/timing is visible at a glance.
           const disp = t.hold_disposition ? `\t${t.hold_disposition}${t.resolver_ref ? `→${t.resolver_ref}` : ''}` : '';
-          process.stdout.write(`#${t.id}\t${t.status}${disp}\t${t.title}${t.slug ? ` (id:${t.slug})` : ''}\n`);
+          process.stdout.write(`#${t.id}\t${stamp(t.updated_at)}\t${t.status}${disp}\t${t.title}${t.slug ? ` (id:${t.slug})` : ''}\n`);
         }
+        // Tail: what's actively being worked + when the queue last moved → an instant fast/slow/stalled read.
+        if (rows.length) {
+          const inProgress = rows.filter((r) => r.status === 'claimed');
+          const latest = rows.reduce<string | undefined>((a, r) => (r.updated_at && (!a || r.updated_at > a) ? r.updated_at : a), undefined);
+          process.stdout.write(`\nin progress (${inProgress.length})${inProgress.length ? ':' : ': none'}\n`);
+          for (const t of inProgress) {
+            process.stdout.write(`  #${t.id}\t${ago(t.updated_at)} ago\t${t.title}${t.slug ? ` (id:${t.slug})` : ''}\n`);
+          }
+          process.stdout.write(`\n${rows.length} tasks · last activity ${stamp(latest)} (${ago(latest)} ago)\n`);
+        }
+      }
       return 0;
     }
 
