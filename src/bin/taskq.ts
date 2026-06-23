@@ -360,15 +360,22 @@ function main(argv: string[]): number {
         for (const t of rows) {
           // Surface the disposition inline so a hold's owner/timing is visible at a glance.
           const disp = t.hold_disposition ? `\t${t.hold_disposition}${t.resolver_ref ? `→${t.resolver_ref}` : ''}` : '';
-          process.stdout.write(`#${t.id}\t${stamp(t.updated_at)}\t${t.status}${disp}\t${t.title}${t.slug ? ` (id:${t.slug})` : ''}\n`);
+          process.stdout.write(
+            `#${t.id}\t${stamp(t.updated_at)}\t${t.status}${disp}\t${t.title}${t.slug ? ` (id:${t.slug})` : ''}\n`,
+          );
         }
         // Tail: what's actively being worked + when the queue last moved → an instant fast/slow/stalled read.
         if (rows.length) {
           const inProgress = rows.filter((r) => r.status === 'claimed');
-          const latest = rows.reduce<string | undefined>((a, r) => (r.updated_at && (!a || r.updated_at > a) ? r.updated_at : a), undefined);
+          const latest = rows.reduce<string | undefined>(
+            (a, r) => (r.updated_at && (!a || r.updated_at > a) ? r.updated_at : a),
+            undefined,
+          );
           process.stdout.write(`\nin progress (${inProgress.length})${inProgress.length ? ':' : ': none'}\n`);
           for (const t of inProgress) {
-            process.stdout.write(`  #${t.id}\t${ago(t.updated_at)} ago\t${t.title}${t.slug ? ` (id:${t.slug})` : ''}\n`);
+            process.stdout.write(
+              `  #${t.id}\t${ago(t.updated_at)} ago\t${t.title}${t.slug ? ` (id:${t.slug})` : ''}\n`,
+            );
           }
           process.stdout.write(`\n${rows.length} tasks · last activity ${stamp(latest)} (${ago(latest)} ago)\n`);
         }
