@@ -246,6 +246,17 @@ const MIGRATIONS: Migration[] = [
     },
   },
   {
+    // No-op-OK tasks: a diagnostic/audit/check/review (or any "only change if
+    // needed") task may legitimately complete with NO git delta. The false-done
+    // gate must NOT demand a non-empty delta for these — it still verifies no
+    // regression, but trusts the worker's judgment that nothing needed changing.
+    // Default 0 keeps the delta requirement on for ordinary code-change tasks.
+    version: 11,
+    up: (db) => {
+      db.exec(`ALTER TABLE tasks ADD COLUMN noop_ok INTEGER NOT NULL DEFAULT 0`);
+    },
+  },
+  {
     // Structured hold-disposition: every PARKED task declares WHO unblocks it and
     // WHEN (machine-set, not free-text), so a park can never silently strand a task
     // (the rfc-31j bug: a false-done reverted to a bare on_hold — no retry, no heal —
@@ -260,7 +271,7 @@ const MIGRATIONS: Migration[] = [
     // (resolver = its unmet, non-done `needs:` slugs); every other parked status →
     // needs_owner (the safe default — a human triages it). Only touches rows where
     // hold_disposition IS NULL, so it's idempotent and additive.
-    version: 11,
+    version: 12,
     up: (db) => {
       db.exec(`ALTER TABLE tasks ADD COLUMN hold_disposition TEXT`);
       db.exec(`ALTER TABLE tasks ADD COLUMN resolver_ref TEXT`);

@@ -51,6 +51,18 @@ test('rejects an invalid task (nonzero exit + message)', () => {
   expect(r.stderr).toContain('unknown model');
 });
 
+test('--noop-ok sets the flag on add; --noop-ok false clears it on update', () => {
+  const id = (JSON.parse(run('add', 'audit task', '--noop-ok').stdout) as { id: number }).id;
+  expect((JSON.parse(run('show', String(id), '--json').stdout) as { noop_ok: number }).noop_ok).toBe(1);
+
+  run('update', String(id), '--noop-ok', 'false');
+  expect((JSON.parse(run('show', String(id), '--json').stdout) as { noop_ok: number }).noop_ok).toBe(0);
+
+  // A plain task defaults to 0.
+  const plain = (JSON.parse(run('add', 'code change').stdout) as { id: number }).id;
+  expect((JSON.parse(run('show', String(plain), '--json').stdout) as { noop_ok: number }).noop_ok).toBe(0);
+});
+
 test('hold / unhold flips status', () => {
   const id = (JSON.parse(run('add', 'holdme').stdout) as { id: number }).id;
   run('hold', String(id), '--note', 'waiting');

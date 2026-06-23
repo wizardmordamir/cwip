@@ -158,6 +158,14 @@ export interface TaskRow {
    * A failed/reaped task is re-queued (with backoff) while `attempts < max`.
    */
   max_attempts: number | null;
+  /**
+   * 1 = this task may legitimately complete with NO git delta (an audit/check/
+   * review, an "only change if needed" task that finds everything OK, or a task
+   * that only files follow-up taskq tasks). The false-done gate skips its
+   * non-empty-delta requirement for such a task (it still checks for a build
+   * regression). 0 = ordinary code-change task — a no-op "done" is a false-done.
+   */
+  noop_ok: number;
   parent_id: number | null;
   /** Why it's on_hold / blocked / needs_input / failed (the human reason). */
   note: string | null;
@@ -207,6 +215,12 @@ export interface NewTask {
   is_saved?: boolean;
   /** Per-task retry ceiling (overrides the config default); pass null to clear. */
   max_attempts?: number | null;
+  /**
+   * When true, the task may legitimately land NO git delta — the false-done gate
+   * accepts a no-op completion (it still rejects a build regression). Set this on
+   * diagnostic/audit/check/review tasks. Default false: a no-op "done" is a false-done.
+   */
+  noop_ok?: boolean;
   parent_id?: number;
   note?: string;
   /**
