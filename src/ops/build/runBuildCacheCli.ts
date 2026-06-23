@@ -1,14 +1,16 @@
 import { rm } from 'node:fs/promises';
 import { isAbsolute, join, resolve, sep } from 'node:path';
+import { boolEnv } from '../../web/node/env/optionalEnv';
 import { buildInputManifest } from './buildInputManifest';
 import { checkBuildCache } from './checkBuildCache';
-import { DEFAULT_MANIFEST_SUBDIR } from './defaults';
+import { DEFAULT_MANIFEST_SUBDIR, FORCE_FLAGS, NO_CACHE_ENV } from './defaults';
 import { resolveManifestPath } from './resolveManifestPath';
 import { resolveProjectRoot } from './resolveProjectRoot';
 import { saveManifest } from './saveManifest';
 import type { BuildCacheConfig, BuildCacheOptions } from './types';
 
 const VERBS = ['check', 'save', 'clean'] as const;
+const FORCE_FLAG_SET = new Set<string>(FORCE_FLAGS);
 
 const logFileList = (label: string, files: string[]): void => {
   if (files.length === 0) return;
@@ -28,16 +30,28 @@ const logFileList = (label: string, files: string[]): void => {
  *
  * Usage in package.json:  `bun scripts/buildCache check server || (cd server && bun run build)`
  *                  then:  `… && bun scripts/buildCache save server`
+ *
+ * Forcing a real rebuild (never trust a cached green). A `check` always reports
+ * "build needed" (exit 1) when the {@link NO_CACHE_ENV} env var is truthy OR a
+ * force flag ({@link FORCE_FLAGS}: `--force` / `--no-cache` / `-f`) is passed.
+ * Use this at a green gate and across every merge/promotion boundary, where a
+ * stale-cache skip could certify broken output as green — the env var flips the
+ * whole gate/merge process at once, the flag forces a single call. `save`/`clean`
+ * are unaffected, so the cache still warms the inner loop after a forced build.
  */
 export const runBuildCacheCli = async (
   config: BuildCacheConfig = {},
   argv: string[] = process.argv.slice(2),
 ): Promise<number> => {
-  const verb = argv[0];
-  const dir = argv[1];
+  // Split flags from positionals so a force flag may appear anywhere (e.g.
+  // `check --force ui` or `check ui --no-cache`), then read verb + target.
+  const forced = argv.some((arg) => FORCE_FLAG_SET.has(arg)) || boolEnv(NO_CACHE_ENV);
+  const positionals = argv.filter((arg) => !arg.startsWith('-'));
+  const verb = positionals[0];
+  const dir = positionals[1];
 
   if (!verb || !(VERBS as readonly string[]).includes(verb)) {
-    console.error(`buildCache: usage: <${VERBS.join('|')}> [dir]`);
+    console.error(`buildCache: usage: <${VERBS.join('|')}> [dir] [--force]`);
     return 2;
   }
 
@@ -81,7 +95,14 @@ export const runBuildCacheCli = async (
     return 0;
   }
 
-  // check
+  // check — at a green gate or merge/promotion boundary the cache must not be
+  // trusted: force a rebuild so "green" only ever means "actually rebuilt".
+  if (forced) {
+    const why = boolEnv(NO_CACHE_ENV) ? `${NO_CACHE_ENV} set` : 'force flag';
+    console.log(`buildCache: cache bypassed (${why}) for "${dir}" -> build needed`);
+    return 1;
+  }
+
   const status = await checkBuildCache(options);
   if (status.fresh) {
     console.log(`buildCache: no input changes for "${dir}" -> skipping`);
