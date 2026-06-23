@@ -1,7 +1,7 @@
 export const deepFreeze = <T>(object: T): T => {
   const propNames = Object.getOwnPropertyNames(object);
   for (const name of propNames) {
-    const value = object[name];
+    const value = (object as Record<string, unknown>)[name];
     if (value && typeof value === 'object') {
       deepFreeze(value);
     }

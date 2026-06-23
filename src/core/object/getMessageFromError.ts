@@ -4,7 +4,7 @@ import { showStackForError } from './showStackForError';
 
 export const dbConnectionErrors = ['ECONNCLOSED', 'Connection is closed'];
 
-export const getMessageFromError = (error) => {
+export const getMessageFromError = (error: any) => {
   try {
     if (!error) {
       return '';

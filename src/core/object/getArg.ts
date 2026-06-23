@@ -1,14 +1,14 @@
-export const getArg = (...args) => {
+export const getArg = (...args: any[]) => {
   return args[0];
 };
 
 export const getArgAt =
-  (index) =>
-  (...args) => {
+  (index: any) =>
+  (...args: any[]) => {
     return args[index];
   };
 
-export const getArgLast = (...args) => {
+export const getArgLast = (...args: any[]) => {
   return args[args.length - 1];
 };
 

@@ -22,7 +22,7 @@ export const loggingSettings: LoggingSettings = {
 
 export const updateLoggingSettings = (settings: Partial<LoggingSettings>) => {
   for (const key in settings) {
-    loggingSettings[key] = settings[key];
+    (loggingSettings as Obj)[key] = (settings as Obj)[key];
   }
 };
 
@@ -33,7 +33,7 @@ export const cleanStringForLogging = (str: string, env: Obj): string => {
   }, str);
 };
 
-export const cleanDataForLogging = (opts, env: Obj) => {
+export const cleanDataForLogging = (opts: any, env: Obj): any => {
   if (!opts) {
     return opts;
   }
@@ -61,7 +61,7 @@ export const cleanDataForLogging = (opts, env: Obj) => {
   return JSON.parse(cleanStringJSON);
 };
 
-export const shouldLogMessage = (message, group = 'default') => {
+export const shouldLogMessage = (message: any, group = 'default') => {
   if (!message) {
     return true;
   }

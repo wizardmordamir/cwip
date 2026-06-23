@@ -8,113 +8,140 @@
       "import": "./dist/index.js"
     },
     "./audio": {
+      "source": "./src/web/audio/index.ts",
       "types": "./dist/web/audio/index.d.ts",
       "import": "./dist/web/audio/index.js"
     },
     "./audio/testing": {
+      "source": "./src/web/audio/testing/index.ts",
       "types": "./dist/web/audio/testing/index.d.ts",
       "import": "./dist/web/audio/testing/index.js"
     },
     "./build": {
+      "source": "./src/ops/build/index.ts",
       "types": "./dist/ops/build/index.d.ts",
       "import": "./dist/ops/build/index.js"
     },
     "./db-mock": {
+      "source": "./src/services/db-mock/index.ts",
       "types": "./dist/services/db-mock/index.d.ts",
       "import": "./dist/services/db-mock/index.js"
     },
     "./dbquery": {
+      "source": "./src/services/dbquery/index.ts",
       "types": "./dist/services/dbquery/index.d.ts",
       "import": "./dist/services/dbquery/index.js"
     },
     "./e2e": {
+      "source": "./src/ops/e2e/index.ts",
       "types": "./dist/ops/e2e/index.d.ts",
       "import": "./dist/ops/e2e/index.js",
       "default": "./dist/ops/e2e/index.js"
     },
     "./e2e/reporter": {
+      "source": "./src/ops/e2e/reporter.ts",
       "types": "./dist/ops/e2e/reporter.d.ts",
       "import": "./dist/ops/e2e/reporter.js",
       "default": "./dist/ops/e2e/reporter.js"
     },
     "./env": {
+      "source": "./src/data/env/index.ts",
       "types": "./dist/data/env/index.d.ts",
       "import": "./dist/data/env/index.js"
     },
     "./error": {
+      "source": "./src/core/error/index.ts",
       "types": "./dist/core/error/index.d.ts",
       "import": "./dist/core/error/index.js"
     },
     "./excel": {
+      "source": "./src/data/excel/index.ts",
       "types": "./dist/data/excel/index.d.ts",
       "import": "./dist/data/excel/index.js"
     },
     "./excel-engine": {
+      "source": "./src/data/excel-engine/index.ts",
       "types": "./dist/data/excel-engine/index.d.ts",
       "import": "./dist/data/excel-engine/index.js"
     },
     "./excel-engine/types": {
+      "source": "./src/data/excel-engine/types.ts",
       "types": "./dist/data/excel-engine/types.d.ts",
       "import": "./dist/data/excel-engine/types.js"
     },
     "./health": {
+      "source": "./src/ops/health/index.ts",
       "types": "./dist/ops/health/index.d.ts",
       "import": "./dist/ops/health/index.js"
     },
     "./json": {
+      "source": "./src/data/json/index.ts",
       "types": "./dist/data/json/index.d.ts",
       "import": "./dist/data/json/index.js"
     },
     "./layout": {
+      "source": "./src/core/layout/index.ts",
       "types": "./dist/core/layout/index.d.ts",
       "import": "./dist/core/layout/index.js"
     },
     "./mongodb": {
+      "source": "./src/services/mongodb/index.ts",
       "types": "./dist/services/mongodb/index.d.ts",
       "import": "./dist/services/mongodb/index.js"
     },
     "./noise": {
+      "source": "./src/web/noise/index.ts",
       "types": "./dist/web/noise/index.d.ts",
       "import": "./dist/web/noise/index.js"
     },
     "./node": {
+      "source": "./src/web/node/index.ts",
       "types": "./dist/web/node/index.d.ts",
       "import": "./dist/web/node/index.js"
     },
     "./orchestration": {
+      "source": "./src/core/orchestration/index.ts",
       "types": "./dist/core/orchestration/index.d.ts",
       "import": "./dist/core/orchestration/index.js"
     },
     "./query": {
+      "source": "./src/services/query/index.ts",
       "types": "./dist/services/query/index.d.ts",
       "import": "./dist/services/query/index.js"
     },
     "./schema": {
+      "source": "./src/core/schema/index.ts",
       "types": "./dist/core/schema/index.d.ts",
       "import": "./dist/core/schema/index.js"
     },
     "./search": {
+      "source": "./src/core/search/index.ts",
       "types": "./dist/core/search/index.d.ts",
       "import": "./dist/core/search/index.js"
     },
     "./servicenow": {
+      "source": "./src/services/servicenow/index.ts",
       "types": "./dist/services/servicenow/index.d.ts",
       "import": "./dist/services/servicenow/index.js"
     },
     "./server": {
+      "source": "./src/web/server/index.ts",
       "types": "./dist/web/server/index.d.ts",
       "import": "./dist/web/server/index.js"
     },
     "./shape": {
+      "source": "./src/data/shape/index.ts",
       "types": "./dist/data/shape/index.d.ts",
       "import": "./dist/data/shape/index.js"
     },
     "./site-smoke": {
+      "source": "./src/ops/site-smoke/index.ts",
       "types": "./dist/ops/site-smoke/index.d.ts",
       "import": "./dist/ops/site-smoke/index.js",
       "default": "./dist/ops/site-smoke/index.js"
     },
     "./sqlite": {
+      "source": "./src/services/sqlite/index.ts",
       "types": "./dist/services/sqlite/index.d.ts",
       "import": "./dist/services/sqlite/index.js"
     },
@@ -124,15 +151,18 @@
       "import": "./dist/services/taskq/index.js"
     },
     "./test-report": {
+      "source": "./src/ops/test-report/index.ts",
       "types": "./dist/ops/test-report/index.d.ts",
       "import": "./dist/ops/test-report/index.js"
     },
     "./test-report/types": {
+      "source": "./src/ops/test-report/types.ts",
       "types": "./dist/ops/test-report/types.d.ts",
       "import": "./dist/ops/test-report/types.js"
     },
     "./testing": {
       "bun": {
+        "source": "./src/ops/testing/index.ts",
         "types": "./dist/ops/testing/index.d.ts",
         "import": "./dist/ops/testing/index.js"
       },

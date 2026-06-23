@@ -9,4 +9,4 @@
  * `TypeError` reading `.response` — and this is called from `showStackForError`
  * during error formatting, exactly when a defined error isn't guaranteed.
  */
-export const isAxiosError = (err) => !!err && (!!err.response || err.isAxiosError === true);
+export const isAxiosError = (err: any) => !!err && (!!err.response || err.isAxiosError === true);

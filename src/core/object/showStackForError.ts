@@ -3,7 +3,7 @@ import { isNetworkError } from './isNetworkError';
 
 export const skipStackErrorCodes = ['EREQUEST', 'credentials_required'];
 
-export const showStackForError = function showStackForError(error) {
+export const showStackForError = function showStackForError(error: any) {
   if (!error?.stack) {
     return false;
   }

@@ -8,7 +8,7 @@ import { wrapPipeAsync } from './wrapAsyncPipe';
 
 // short-circuit once stopProcessing is set
 export const requestHandlerPipelineWrapper =
-  <Tdata>(fn) =>
+  <Tdata>(fn: any) =>
   async (value: RequestPipelineContext<Tdata>): Promise<RequestPipelineContext<Tdata>> => {
     const isCleanupFunction = (fn as any).__skipStopProcessingCheck === true;
 
@@ -45,7 +45,7 @@ export const markAsCleanup = <T>(fn: (value: T) => Promise<T>): ((value: T) => P
 // catch pipeline errors with this instead of try catches in each pipe fn
 export const requestHandlerPipelineCatch =
   <Tdata>(value: RequestPipelineContext<Tdata>) =>
-  (err): RequestPipelineContext<Tdata> => {
+  (err: any): RequestPipelineContext<Tdata> => {
     if (!value?.req) return value;
     const requestLocals: RequestLocals = value.req.locals;
     requestLocals.logger.error(requestLocals.correlationId, 'caught pipeline err:', err);
@@ -67,7 +67,7 @@ export const requestHandlerPipelineCatch =
   };
 
 // create reusable pipeline that runs all functions it's loaded with
-export const createPipeline = <Tdata>(...fns) => {
+export const createPipeline = <Tdata>(...fns: any[]) => {
   const pipeline = async (initialValue: RequestPipelineContext<Tdata>): Promise<RequestPipelineContext<Tdata>> => {
     return wrapPipeAsync(requestHandlerPipelineWrapper, requestHandlerPipelineCatch<Tdata>(initialValue))(...fns)(
       initialValue,
@@ -79,7 +79,7 @@ export const createPipeline = <Tdata>(...fns) => {
 // create reusable pipeline that automatically sends a response after all function run
 // load it with fns, then call with data to start it
 export const createRequestPipeline =
-  <Tdata>(...fns) =>
+  <Tdata>(...fns: any[]) =>
   (defaults: Partial<RequestPipelineContext<Tdata>['defaults']> = {}) => {
     const frozenDefaults = Object.freeze(defaults);
     return async function createInnerPipeline(req?: any, res?: any): Promise<RequestPipelineContext<Tdata>> {

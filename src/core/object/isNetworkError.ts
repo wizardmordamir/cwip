@@ -21,7 +21,7 @@ export const defaultNetworkErrorIndicators = [
   'ESHUTDOWN',
 ];
 
-export const isNetworkError = (err, networkErrorIndicators: string[] = defaultNetworkErrorIndicators) => {
+export const isNetworkError = (err: any, networkErrorIndicators: string[] = defaultNetworkErrorIndicators) => {
   if (!err || typeof err !== 'object') return false;
 
   if ('code' in err && typeof err.code === 'string') {

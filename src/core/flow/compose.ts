@@ -1,6 +1,6 @@
 export const compose =
-  (...fns) =>
-  (...args) =>
+  (...fns: any[]) =>
+  (...args: any[]) =>
     // biome-ignore lint: allowing spread operator for better readability
     fns.reduceRight((res, fn) => [fn.call(null, ...res)], args)[0];
 
