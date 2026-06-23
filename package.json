@@ -109,6 +109,11 @@
       "types": "./dist/data/shape/index.d.ts",
       "import": "./dist/data/shape/index.js"
     },
+    "./site-smoke": {
+      "types": "./dist/ops/site-smoke/index.d.ts",
+      "import": "./dist/ops/site-smoke/index.js",
+      "default": "./dist/ops/site-smoke/index.js"
+    },
     "./sqlite": {
       "types": "./dist/services/sqlite/index.d.ts",
       "import": "./dist/services/sqlite/index.js"
