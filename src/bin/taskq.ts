@@ -11,19 +11,28 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { applyRecommendedPragmas } from '../services/sqlite';
 import {
+  acceptFinding,
   addTask,
   claim,
   claimNext,
   completeTask,
   deleteTask,
+  type FindingSeverity,
+  type FindingStatus,
   failTask,
+  findingsSummary,
+  getFinding,
   getNeeds,
   getTask,
   type HoldDisposition,
   heartbeat,
+  isFindingSeverity,
+  isFindingStatus,
   isHoldDisposition,
+  listFindings,
   listNeedsOwner,
   listTasks,
+  markFindingFixed,
   migrate,
   moveTask,
   type NewTask,
@@ -31,16 +40,20 @@ import {
   type Position,
   parkTask,
   reapExpired,
+  recordFinding,
   releaseLease,
   renderTasksMarkdown,
+  reopenFinding,
   SCHEMA_VERSION,
   setStatus,
+  startFinding,
   type TaskPatch,
   type TaskqDb,
   type TaskRow,
   taskqDbPath,
   taskqHome,
   updateTask,
+  wontfixFinding,
 } from '../services/taskq';
 
 const USAGE = `taskq — SQLite task queue
@@ -68,6 +81,19 @@ Run (orchestrator/worker):
   taskq fail <id> --reason T [--permanent] [--max-attempts N]   (auto-retries with backoff unless --permanent)
   taskq release <id> | heartbeat <id> | reap
   taskq init                              create/migrate the DB
+
+Findings (continuous-improvement ledger — idempotent: fixed/accepted never re-flagged):
+  taskq findings record --type T --location L --description D [--severity S] [--detector NAME] [--repo R] [--no-task]
+                                          UPSERT by stable fingerprint. A NEW issue → open finding + auto-filed
+                                          fix task (prints {created,finding,fixTaskId}); an existing one → no-op.
+  taskq findings ls [--status S] [--type T] [--severity S] [--open] [--json]   list (--open: open+in_progress only)
+  taskq findings show <id> [--json]       show one finding
+  taskq findings summary [--json]         totals + counts by status/severity/type
+  taskq findings start <id>               mark in_progress
+  taskq findings fix <id>                 mark fixed (the fix task's completion does this automatically)
+  taskq findings accept <id> [--note T]   the flagged choice is OPTIMAL — never re-flag
+  taskq findings wontfix <id> [--note T]  a conscious deferral — never re-flag
+  taskq findings reopen <id>              back to open (a regression resurfaced)
 
 Author opts: --body --slug --repo --model --think --group --recur N --max-attempts N --needs a,b --note --status
              --fast   --noop-ok   --pos top|bottom|before:<id>|after:<id>
@@ -168,6 +194,114 @@ function out(obj: unknown): void {
  */
 function withRetryAt(t: TaskRow): TaskRow & { retry_at: number | null } {
   return { ...t, retry_at: t.hold_disposition === 'awaiting_retry' ? t.recur_next_at : null };
+}
+
+/**
+ * The `taskq findings …` sub-command group — the agent/detector interface to the
+ * continuous-improvement ledger. `record` is the idempotent UPSERT a recurring
+ * detector calls every sweep; the rest drive a finding through its lifecycle.
+ */
+function findingsCmd(db: TaskqDb, positional: string[], flags: Flags): number {
+  const sub = positional[0];
+  const fid = (): number => {
+    const n = Number(positional[1]);
+    if (!Number.isInteger(n)) throw new Error(`findings ${sub} needs a numeric <id>`);
+    return n;
+  };
+  const note = (): string | null | undefined => (flags.note !== undefined ? (str(flags, 'note') ?? null) : undefined);
+
+  switch (sub) {
+    case 'record': {
+      const type = str(flags, 'type');
+      const location = str(flags, 'location');
+      const description = str(flags, 'description');
+      if (!type || !location || !description) {
+        throw new Error('findings record needs --type, --location and --description');
+      }
+      const severity = str(flags, 'severity');
+      if (severity !== undefined && !isFindingSeverity(severity)) {
+        throw new Error(`bad --severity "${severity}" (use info|low|medium|high|critical)`);
+      }
+      // `--no-task` records the finding WITHOUT auto-filing a fix task (e.g. a detector
+      // that batches its own follow-ups). Default behaviour files the linked fix task.
+      const result = recordFinding(
+        db,
+        {
+          type,
+          location,
+          description,
+          severity: severity as FindingSeverity | undefined,
+          detector: str(flags, 'detector'),
+          repo: str(flags, 'repo'),
+        },
+        flags['no-task'] === true ? { fixTask: false } : {},
+      );
+      out(result);
+      return 0;
+    }
+
+    case 'ls': {
+      const status = str(flags, 'status');
+      if (status !== undefined && !isFindingStatus(status)) {
+        throw new Error(`bad --status "${status}" (use open|in_progress|fixed|accepted|wontfix)`);
+      }
+      const rows = listFindings(db, {
+        openOnly: flags.open === true,
+        status: status as FindingStatus | undefined,
+        type: str(flags, 'type'),
+        severity: str(flags, 'severity') as FindingSeverity | undefined,
+      });
+      if (flags.json) out(rows);
+      else
+        for (const f of rows) {
+          const link = f.fix_task ? `\t→task#${f.fix_task}` : '';
+          process.stdout.write(`#${f.id}\t${f.status}\t${f.severity}\t${f.type}\t${f.location}${link}\n`);
+        }
+      return 0;
+    }
+
+    case 'show': {
+      const f = getFinding(db, fid());
+      if (!f) {
+        process.stderr.write(`finding ${fid()} not found\n`);
+        return 1;
+      }
+      out(f);
+      return 0;
+    }
+
+    case 'summary':
+      out(findingsSummary(db));
+      return 0;
+
+    case 'start':
+      startFinding(db, fid());
+      out({ finding: fid(), status: 'in_progress' });
+      return 0;
+
+    case 'fix':
+      markFindingFixed(db, fid());
+      out({ finding: fid(), status: 'fixed' });
+      return 0;
+
+    case 'accept':
+      acceptFinding(db, fid(), note());
+      out({ finding: fid(), status: 'accepted' });
+      return 0;
+
+    case 'wontfix':
+      wontfixFinding(db, fid(), note());
+      out({ finding: fid(), status: 'wontfix' });
+      return 0;
+
+    case 'reopen':
+      reopenFinding(db, fid());
+      out({ finding: fid(), status: 'open' });
+      return 0;
+
+    default:
+      throw new Error(`unknown findings command: ${sub ?? '(none)'} (see \`taskq --help\`)`);
+  }
 }
 
 function main(argv: string[]): number {
@@ -346,6 +480,9 @@ function main(argv: string[]): number {
       deleteTask(db, id());
       out({ removed: id() });
       return 0;
+
+    case 'findings':
+      return findingsCmd(db, positional, flags);
 
     case 'view': {
       const rows = listTasks(db);

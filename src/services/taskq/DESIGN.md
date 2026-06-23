@@ -272,3 +272,53 @@ Responsibilities carried over, reimplemented against the engine (no shelling to 
 6. Ramp JOBS; monitor usage dashboard.
 7. After clean burn-in: Phase 7 delete.
 ```
+
+---
+
+## 15. Continuous-improvement findings ledger (`findings.ts`, schema v13)
+
+The idempotency backbone for **recurring quality detectors**, so a sweep never
+re-flags a choice that was already fixed or deliberately accepted. Without it, every
+recurring auditor re-files the same issues each run — noise that buries real
+regressions and churns the queue.
+
+**Model.** A `findings` row carries a STABLE `fingerprint` (`findingFingerprint` — a
+normalized hash of `type` + `location` + `description`), the issue's `type` /
+`location` / `description` / `severity`, a lifecycle `status`
+(`open → in_progress → fixed`, or the deliberate terminal `accepted` / `wontfix`),
+the `detector` that recorded it, and the linked `fix_task` (FK → `tasks`, `ON DELETE
+SET NULL`). `resolved_at` stamps when it closed.
+
+**The UPSERT contract (`recordFinding`).** A detector reports an issue every sweep;
+the `fingerprint UNIQUE` constraint makes it idempotent:
+- **already present in ANY status → no-op** (`INSERT … ON CONFLICT DO NOTHING`;
+  `created: false`). Race-safe across concurrent detectors with no outer txn.
+- **genuinely new fingerprint → insert an OPEN finding AND auto-file a focused fix
+  task** (`defaultFixTask`, overridable), linked via `fix_task`.
+
+**Resolution.** When the fix task completes, `completeTask` calls
+`resolveFindingsForTask` → the finding becomes `fixed` (resolved_at stamped). A
+finding can instead be marked `accepted` (the flagged choice is actually optimal) or
+`wontfix` (a conscious defer) — by the fix-task worker if it judges the choice
+optimal, or by the owner. All three terminal states keep the fingerprint in the
+ledger, so the issue is **never re-flagged**, even though no code changed. A genuine
+re-introduction produces the same fingerprint and is re-caught (reopen the row).
+
+**Agent/detector interface.** `taskq findings record|ls|show|summary|start|fix|accept|wontfix|reopen`
+(see `taskq --help`). `record` prints `{ created, finding, fixTaskId }` so a detector
+knows whether it surfaced something new.
+
+**Unifying the recurring auditors.** The standing recurring detectors stop filing
+ad-hoc duplicate tasks and instead `taskq findings record` each issue (idempotent),
+which auto-files the fix task only for genuinely new findings:
+
+| Detector | `--detector` | typical `type`(s) |
+| --- | --- | --- |
+| `fu-drift-audit-recurring` | `fu-drift-audit-recurring` | `drift`, `inconsistent-api` |
+| `fu-cve-audit` | `fu-cve-audit` | `cve` |
+| `fu-log-review` | `fu-log-review` | `weak-ux`, `perf`, `drift` |
+| `audit-orchestration-hygiene` | `audit-orchestration-hygiene` | `hygiene`, `inconsistent-api`, `bad-schema` |
+
+**UI.** rubato surfaces the ledger (open findings + severity + status + links to fix
+tasks + the summary rollup) so the owner reviews continuous-improvement progress at a
+glance.

@@ -111,6 +111,94 @@ test('status --disposition + --resolver parks with a resolver; ls --needs-owner 
   expect(bad.stderr).toContain('bad --disposition');
 });
 
+test('findings record is idempotent, auto-files a fix task, and a completion resolves the finding', () => {
+  const rec = JSON.parse(
+    run(
+      'findings',
+      'record',
+      '--type',
+      'drift',
+      '--location',
+      'src/cli/example.ts',
+      '--description',
+      'a recurring smell',
+      '--severity',
+      'high',
+      '--detector',
+      'fu-drift-audit-recurring',
+      '--repo',
+      'cwip',
+    ).stdout,
+  ) as { created: boolean; finding: { id: number; status: string }; fixTaskId: number };
+  expect(rec.created).toBe(true);
+  expect(rec.finding.status).toBe('open');
+  expect(rec.fixTaskId).toBeGreaterThan(0);
+  // The auto-filed fix task targets the detector's repo.
+  expect((JSON.parse(run('show', String(rec.fixTaskId), '--json').stdout) as { repo: string }).repo).toBe('cwip');
+
+  // Recording the SAME issue again is a no-op (no duplicate, no second task).
+  const again = JSON.parse(
+    run(
+      'findings',
+      'record',
+      '--type',
+      'drift',
+      '--location',
+      'src/cli/example.ts',
+      '--description',
+      'a recurring smell',
+    ).stdout,
+  ) as { created: boolean; finding: { id: number } };
+  expect(again.created).toBe(false);
+  expect(again.finding.id).toBe(rec.finding.id);
+  expect((JSON.parse(run('findings', 'ls', '--json').stdout) as unknown[]).length).toBe(1);
+
+  // Completing the fix task auto-resolves the finding → fixed.
+  run('claim', String(rec.fixTaskId), '--worker', 'w1');
+  run('complete', String(rec.fixTaskId), '--commit', 'deadbee');
+  expect(
+    (JSON.parse(run('findings', 'show', String(rec.finding.id), '--json').stdout) as { status: string }).status,
+  ).toBe('fixed');
+
+  // summary reflects the ledger.
+  const summary = JSON.parse(run('findings', 'summary', '--json').stdout) as {
+    total: number;
+    byStatus: Record<string, number>;
+  };
+  expect(summary.total).toBe(1);
+  expect(summary.byStatus.fixed).toBe(1);
+});
+
+test('findings accept marks a finding terminal so it is never re-flagged', () => {
+  const rec = JSON.parse(
+    run('findings', 'record', '--type', 'weak-ux', '--location', 'ui/x.tsx', '--description', 'minor nit', '--no-task')
+      .stdout,
+  ) as { fixTaskId: number | null; finding: { id: number } };
+  expect(rec.fixTaskId).toBeNull(); // --no-task suppressed the fix task
+
+  run('findings', 'accept', String(rec.finding.id), '--note', 'intentional, optimal as-is');
+  const shown = JSON.parse(run('findings', 'show', String(rec.finding.id), '--json').stdout) as {
+    status: string;
+    note: string;
+    resolved_at: string | null;
+  };
+  expect(shown.status).toBe('accepted');
+  expect(shown.note).toBe('intentional, optimal as-is');
+  expect(shown.resolved_at).not.toBeNull();
+
+  // Re-recording the same issue stays a no-op and does NOT reopen it.
+  run('findings', 'record', '--type', 'weak-ux', '--location', 'ui/x.tsx', '--description', 'minor nit');
+  expect(
+    (JSON.parse(run('findings', 'show', String(rec.finding.id), '--json').stdout) as { status: string }).status,
+  ).toBe('accepted');
+});
+
+test('findings record rejects a bad severity', () => {
+  const r = run('findings', 'record', '--type', 'cve', '--location', 'a', '--description', 'b', '--severity', 'huge');
+  expect(r.code).toBe(1);
+  expect(r.stderr).toContain('bad --severity');
+});
+
 test('ls --json round-trips a body with special characters (quotes, newlines, backslashes, control chars)', () => {
   // Chars that break hand-built JSON serialization but must be properly escaped by JSON.stringify:
   // double-quotes, backslashes, CR, LF, tab.  Low control chars (0x01-0x1f) can't travel
@@ -119,7 +207,7 @@ test('ls --json round-trips a body with special characters (quotes, newlines, ba
   const id = (JSON.parse(run('add', 'special chars task', '--body', safePart).stdout) as { id: number }).id;
 
   // Inject low control chars directly into the SQLite DB, bypassing CLI arg restrictions.
-  const controlBody = safePart + '\x01\x02\x03\x1f';
+  const controlBody = `${safePart}\x01\x02\x03\x1f`;
   const dbPath = join(dir, 'taskq.sqlite');
   const injectResult = Bun.spawnSync(
     [
