@@ -26,7 +26,13 @@ export interface TaskqDb {
 
 /**
  * Every task state. Only `ready` is dispatchable; the orchestrator/reaper own
- * `claimed`; `done` is terminal. The rest are holds the scheduler skips.
+ * `claimed`; `done` is terminal. `draft` is the owner's pre-queue space. The rest
+ * are holds the scheduler skips.
+ *   draft          — owner-authored, NOT yet queued; never auto-claimed (like a
+ *                    template). The owner's own pre-queue space, kept distinct
+ *                    from the parked holds workers fall into; the owner moves it
+ *                    → ready to queue it (or duplicates it). Owner-owned, never a
+ *                    worker park — so it carries no hold disposition.
  *   pending_triage — blank model/think, awaiting auto-grading (opt-in triage)
  *   ready          — configured + eligible to run
  *   claimed        — lease held, executing
@@ -38,6 +44,7 @@ export interface TaskqDb {
  *   done           — complete (history in `completions`)
  */
 export const TASK_STATUSES = [
+  'draft',
   'pending_triage',
   'ready',
   'claimed',
@@ -53,15 +60,20 @@ export type TaskStatus = (typeof TASK_STATUSES)[number];
 /** The only status the orchestrator may claim. */
 export const DISPATCHABLE_STATUS: TaskStatus = 'ready';
 
-/** Statuses a human/UI may set directly (runtime states are engine-owned). */
-export const AUTHORABLE_STATUSES: TaskStatus[] = ['ready', 'on_hold', 'not_ready', 'pending_triage'];
+/**
+ * Statuses a human/UI may set directly (runtime states are engine-owned).
+ * `draft` leads: it's the owner's pre-queue authoring state, and the owner
+ * promotes a draft → ready to queue it.
+ */
+export const AUTHORABLE_STATUSES: TaskStatus[] = ['draft', 'ready', 'on_hold', 'not_ready', 'pending_triage'];
 
 /**
  * The PARKED statuses — a task in one of these is NOT dispatchable and is waiting
  * on something. Every park MUST carry a {@link HoldDisposition} so the owner can
  * tell at a glance whether action is needed (the contract: a park may never
- * silently strand a task). The non-parked statuses (pending_triage, ready,
- * claimed, done) carry no disposition — it's cleared on the way out of a hold.
+ * silently strand a task). The non-parked statuses (draft, pending_triage, ready,
+ * claimed, done) carry no disposition — `draft` is owner-owned (not a hold at
+ * all), and the rest clear it on the way out of a hold.
  */
 export const PARKED_STATUSES = ['blocked', 'on_hold', 'needs_input', 'not_ready', 'failed'] as const;
 export type ParkedStatus = (typeof PARKED_STATUSES)[number];

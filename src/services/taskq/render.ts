@@ -16,6 +16,9 @@ const RENDER_ORDER: TaskStatus[] = [
   'on_hold',
   'not_ready',
   'failed',
+  // The owner's pre-queue authoring pile — its own section, never auto-claimed,
+  // kept apart from the worker parks above. Below them since it's not worker-actionable.
+  'draft',
   'done',
 ];
 

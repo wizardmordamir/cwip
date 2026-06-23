@@ -56,7 +56,7 @@ Author:
   taskq update <id> [opts]                patch a task
   taskq hold <id> [--note T] | unhold <id>            (hold → needs_owner disposition)
   taskq status <id> <state> [--note T] [--disposition D] [--resolver REF]
-                                          set status (ready|on_hold|not_ready|pending_triage|…);
+                                          set status (draft|ready|on_hold|not_ready|pending_triage|…);
                                           a parked state defaults to needs_owner unless --disposition
                                           is given (needs_owner|awaiting_task|awaiting_retry|awaiting_dependency)
   taskq rm <id>

@@ -31,7 +31,14 @@ import {
   setStatus,
   updateTask,
 } from './tasks';
-import { HOLD_DISPOSITIONS, isHoldDisposition, isParkedStatus, PARKED_STATUSES, type TaskqDb } from './types';
+import {
+  AUTHORABLE_STATUSES,
+  HOLD_DISPOSITIONS,
+  isHoldDisposition,
+  isParkedStatus,
+  PARKED_STATUSES,
+  type TaskqDb,
+} from './types';
 
 let db: TaskqDb;
 const T0 = 1_000_000;
@@ -147,6 +154,33 @@ describe('eligibility + claim', () => {
         .sort(),
     ).toEqual(['g1', 'g2']);
     expect(listTasks(db, { status: 'ready' }).map((t) => t.title)).toEqual(['other']);
+  });
+});
+
+describe('draft: owner pre-queue, never auto-claimed', () => {
+  test('a draft is never eligible and cannot be claimed; owner queues it via draft → ready', () => {
+    const id = addTask(db, { title: 'owner idea', status: 'draft' });
+    // Sits in the owner's pre-queue space — the scheduler never picks it.
+    expect(nextEligibleId(db, T0)).toBeNull();
+    expect(claimNext(db, { workerId: 'w', nowMs: T0 })).toBeNull();
+    // A direct CAS claim is rejected too (claim only matches status='ready').
+    expect(claim(db, id, { workerId: 'w', nowMs: T0 })).toBe(false);
+    expect(getTask(db, id)?.status).toBe('draft');
+
+    // The owner promotes the draft → ready to queue it; now it's claimable.
+    setStatus(db, id, 'ready');
+    expect(nextEligibleId(db, T0)).toBe(id);
+    expect(claimNext(db, { workerId: 'w', nowMs: T0 })?.id).toBe(id);
+  });
+
+  test('a draft is owner-owned, not a worker park — carries no hold disposition', () => {
+    const id = addTask(db, { title: 'unqueued', status: 'draft' });
+    const t = getTask(db, id)!;
+    expect(t.hold_disposition).toBeNull();
+    expect(t.resolver_ref).toBeNull();
+    expect(isParkedStatus('draft')).toBe(false);
+    // The owner may set it directly from the board/UI.
+    expect(AUTHORABLE_STATUSES).toContain('draft');
   });
 });
 
