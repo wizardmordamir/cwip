@@ -110,3 +110,32 @@ test('status --disposition + --resolver parks with a resolver; ls --needs-owner 
   expect(bad.code).toBe(1);
   expect(bad.stderr).toContain('bad --disposition');
 });
+
+test('ls --json round-trips a body with special characters (quotes, newlines, backslashes, control chars)', () => {
+  // Chars that break hand-built JSON serialization but must be properly escaped by JSON.stringify:
+  // double-quotes, backslashes, CR, LF, tab.  Low control chars (0x01-0x1f) can't travel
+  // through spawnSync CLI args (OS null-term constraint), so we inject them via a direct DB write.
+  const safePart = '"double-quoted" and \\backslash\\ and\nnewline\r\nCRLF\ttab';
+  const id = (JSON.parse(run('add', 'special chars task', '--body', safePart).stdout) as { id: number }).id;
+
+  // Inject low control chars directly into the SQLite DB, bypassing CLI arg restrictions.
+  const controlBody = safePart + '\x01\x02\x03\x1f';
+  const dbPath = join(dir, 'taskq.sqlite');
+  const injectResult = Bun.spawnSync(
+    [
+      'bun',
+      '-e',
+      `import{Database}from'bun:sqlite';const db=new Database(${JSON.stringify(dbPath)});db.run('UPDATE tasks SET body=? WHERE id=?',${JSON.stringify(controlBody)},${id})`,
+    ],
+    { env },
+  );
+  expect(injectResult.exitCode).toBe(0);
+
+  const raw = run('ls', '--json').stdout;
+  // Must parse without throwing — this is the invariant the hygiene scripts rely on.
+  const tasks = JSON.parse(raw) as { id: number; body: string | null }[];
+  const found = tasks.find((t) => t.id === id);
+  expect(found).toBeDefined();
+  // The body must survive the JSON round-trip byte-for-byte.
+  expect(found!.body).toBe(controlBody);
+});

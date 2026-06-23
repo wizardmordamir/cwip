@@ -369,9 +369,12 @@ function main(argv: string[]): number {
   }
 }
 
+// Use process.exitCode instead of process.exit() so stdout is fully flushed
+// before the process terminates. process.exit() truncates at ~64KB when output
+// exceeds the OS pipe buffer, producing invalid JSON on large task lists.
 try {
-  process.exit(main(process.argv));
+  process.exitCode = main(process.argv);
 } catch (e) {
   process.stderr.write(`taskq: ${e instanceof Error ? e.message : String(e)}\n`);
-  process.exit(1);
+  process.exitCode = 1;
 }
