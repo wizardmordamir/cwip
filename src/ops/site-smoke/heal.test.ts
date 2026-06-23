@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { siteSmokeHealBody, siteSmokeHealReason, siteSmokeHealSlug } from './heal';
+import { planSiteSmokeHeal, siteSmokeHealBody, siteSmokeHealReason, siteSmokeHealSlug } from './heal';
 import type { RouteVerdict, SiteSmokeResult, SiteSmokeVerdict } from './types';
 
 const rv = (over: Partial<RouteVerdict>): RouteVerdict => ({
@@ -97,5 +97,47 @@ describe('siteSmokeHealBody', () => {
       { target: 'integration' },
     );
     expect(body).toContain('no per-route detail');
+  });
+});
+
+describe('planSiteSmokeHeal', () => {
+  const importV = () =>
+    verdict([rv({ path: '/charts', reason: 'import-error', importError: true, detail: 'import/resolve error: x' })]);
+
+  it('files a deduped, titled heal on a conclusive failure', () => {
+    const plan = planSiteSmokeHeal(result(importV(), { repo: 'ca' }), { target: 'main', reproduceCmd: 'bun run dev' });
+    expect(plan.shouldFile).toBe(true);
+    expect(plan.slug).toBe('heal-ca-main'); // stable dedup key
+    expect(plan.title).toBe('ca site will not load on main (owner localhost) — import/resolve failure on /charts');
+    expect(plan.reason).toBe('import/resolve failure on /charts');
+    expect(plan.body).toContain('WILL NOT LOAD on main');
+    expect(plan.body).toContain('bun run dev');
+  });
+
+  it('does NOT file on an INCONCLUSIVE run (ran:false) — the gate-never-blocks invariant', () => {
+    const plan = planSiteSmokeHeal(
+      { repo: 'ru', ran: false, ok: false, detail: 'no browser', durationMs: 0 },
+      { target: 'integration' },
+    );
+    expect(plan.shouldFile).toBe(false);
+    expect(plan.slug).toBe('heal-ru-integration');
+  });
+
+  it('does NOT file a verdict whose own ran is false (host launched but probed nothing)', () => {
+    const v: SiteSmokeVerdict = { ran: false, ok: false, detail: 'probed no routes', routes: [], failed: [] };
+    const plan = planSiteSmokeHeal(result(v, { ran: true }), { target: 'integration' });
+    expect(plan.shouldFile).toBe(false);
+  });
+
+  it('does NOT file on a GREEN run', () => {
+    const v: SiteSmokeVerdict = { ran: true, ok: true, detail: 'all clean', routes: [], failed: [] };
+    const plan = planSiteSmokeHeal(result(v, { ok: true }), { target: 'integration' });
+    expect(plan.shouldFile).toBe(false);
+  });
+
+  it('uses integration wording + slug for an integration target', () => {
+    const plan = planSiteSmokeHeal(result(importV(), { repo: 'ru' }), { target: 'integration' });
+    expect(plan.slug).toBe('heal-ru-integration');
+    expect(plan.title).toContain('refactor/integration');
   });
 });

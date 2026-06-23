@@ -68,3 +68,39 @@ export function siteSmokeHealBody(result: SiteSmokeResult, opts: SiteSmokeHealOp
     result.logTail || '(none)',
   ].join('\n');
 }
+
+/** A complete, deduped heal-task plan — the single decision both the gate + watchdog consume. */
+export interface SiteSmokeHealPlan {
+  /**
+   * File the heal task ONLY when the smoke RAN to a conclusion and FAILED. An INCONCLUSIVE
+   * run (no browser, host crash) is `false` — it must never spawn a task or block the gate,
+   * and a GREEN run is `false` too.
+   */
+  shouldFile: boolean;
+  /** Deduped, crash-loop-safe slug (`heal-<repo>-<target>`) — the dedup key both callers key on. */
+  slug: string;
+  /** One-line task title naming the repo + the lead (import-first) failure. */
+  title: string;
+  /** Full heal-task body: failing routes + verbatim errors + the fix-on-integration workflow. */
+  body: string;
+  /** Short lead-failure reason (for logs / the title). */
+  reason: string;
+}
+
+/**
+ * PURE: fold the slug + reason + title + body + the should-file guard into the ONE decision
+ * the promotion gate and the main-health watchdog both need on a site-smoke verdict, so neither
+ * re-implements the "is this red enough to file, and what do we file" policy. Filing is gated on
+ * a CONCLUSIVE failure (`result.ran && verdict.ran && !result.ok`): an inconclusive run never
+ * files (the gate-never-blocks invariant), a green run never files. The slug is the stable dedup
+ * key — callers create-or-rearm the same task, so a crash-looping failure never duplicates.
+ */
+export function planSiteSmokeHeal(result: SiteSmokeResult, opts: SiteSmokeHealOptions): SiteSmokeHealPlan {
+  const ran = result.ran && result.verdict?.ran !== false;
+  const shouldFile = ran && !result.ok;
+  const slug = siteSmokeHealSlug(result.repo, opts.target);
+  const reason = result.verdict ? siteSmokeHealReason(result.verdict) : result.detail;
+  const where = opts.target === 'main' ? 'main (owner localhost)' : 'refactor/integration';
+  const title = `${result.repo} site will not load on ${where} — ${reason}`;
+  return { shouldFile, slug, title, body: siteSmokeHealBody(result, opts), reason };
+}

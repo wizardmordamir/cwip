@@ -20,7 +20,9 @@ export {
 export { decideRoute, decideSiteSmoke } from './decide';
 export {
   type HealTarget,
+  planSiteSmokeHeal,
   type SiteSmokeHealOptions,
+  type SiteSmokeHealPlan,
   siteSmokeHealBody,
   siteSmokeHealReason,
   siteSmokeHealSlug,
