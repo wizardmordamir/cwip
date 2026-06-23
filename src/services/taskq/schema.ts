@@ -293,6 +293,49 @@ const MIGRATIONS: Migration[] = [
       );
     },
   },
+  {
+    // Continuous-improvement findings ledger: the idempotency backbone so recurring
+    // quality detectors (drift / cve / log-review / orchestration-hygiene / …) never
+    // re-flag an already-fixed or deliberately-accepted choice.
+    //
+    //   fingerprint — a STABLE id (normalized hash of type + location + description).
+    //                 The same issue hashes the same across sweeps, and a
+    //                 re-introduction is re-caught. The UNIQUE constraint IS the
+    //                 idempotency guarantee: a detector UPSERTS by fingerprint, so an
+    //                 `INSERT … ON CONFLICT(fingerprint) DO NOTHING` is a no-op when the
+    //                 finding already exists in ANY status — no duplicate, race-safe
+    //                 across concurrent detectors without an outer transaction.
+    //   status      — open → in_progress → fixed, or the deliberate terminal states
+    //                 accepted / wontfix (an optimal choice / conscious defer that is
+    //                 NEVER re-flagged).
+    //   fix_task    — the auto-created focused fix task (FK → tasks). When it completes
+    //                 the finding auto-resolves to `fixed` (see completeTask). ON DELETE
+    //                 SET NULL so deleting the task leaves the finding (de-linked), not
+    //                 a dangling reference.
+    version: 13,
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE findings (
+          id           INTEGER PRIMARY KEY AUTOINCREMENT,
+          fingerprint  TEXT    NOT NULL UNIQUE,
+          type         TEXT    NOT NULL,
+          location     TEXT    NOT NULL,
+          description  TEXT    NOT NULL,
+          severity     TEXT    NOT NULL DEFAULT 'medium',
+          status       TEXT    NOT NULL DEFAULT 'open',
+          detector     TEXT,
+          fix_task     INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+          note         TEXT,
+          created_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+          updated_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+          resolved_at  TEXT
+        );
+      `);
+      db.exec(`CREATE INDEX idx_findings_status ON findings(status);`);
+      db.exec(`CREATE INDEX idx_findings_type ON findings(type);`);
+      db.exec(`CREATE INDEX idx_findings_fix_task ON findings(fix_task);`);
+    },
+  },
 ];
 
 /** The latest schema version (the version the engine expects). */

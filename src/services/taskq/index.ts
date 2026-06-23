@@ -17,6 +17,7 @@ export * from './claudeTelemetry';
 export * from './deps';
 export * from './drainRuns';
 export * from './falseDone';
+export * from './findings';
 export * from './paths';
 export * from './recurrence';
 export * from './render';

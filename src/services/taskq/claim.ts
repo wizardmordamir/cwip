@@ -1,5 +1,6 @@
 import { applyTier, type TierClassifier, tierVerdictFor } from './autoTier';
 import { type BackoffOpts, backoffMs } from './backoff';
+import { resolveFindingsForTask } from './findings';
 import { nextRecurAt } from './recurrence';
 import { getTask } from './tasks';
 import { withTx } from './tx';
@@ -310,6 +311,11 @@ export function completeTask(db: TaskqDb, taskId: number, info: CompleteInfo, no
       info.summary ?? null,
     );
     db.run(`DELETE FROM leases WHERE task_id = ?`, taskId);
+    // Continuous-improvement ledger: completing a fix task auto-resolves the
+    // finding(s) it was filed for → `fixed`. A no-op for any task with no linked
+    // finding, so it's safe on every completion. Deliberate accepted/wontfix
+    // findings are left untouched (resolveFindingsForTask only touches open ones).
+    resolveFindingsForTask(db, taskId);
     // Success clears the retry counter so a recurring/saved task starts its next
     // cycle with a fresh attempt budget (a failure-then-success run shouldn't
     // count against the next run's retries).
