@@ -113,7 +113,13 @@ async function main() {
   let chromium;
   try {
     const pwPath = cfg.playwrightPath || 'playwright';
-    ({ chromium } = await import(pwPath));
+    // playwright ships CommonJS, so a Node ESM dynamic import puts its real exports under
+    // the interop .default namespace; a plain destructure of chromium yields undefined.
+    // Accept both the named export and the interop default (no backticks/template syntax
+    // here on purpose: this whole block is embedded via String.raw).
+    const pw = await import(pwPath);
+    chromium = pw.chromium || (pw.default && pw.default.chromium);
+    if (!chromium) throw new Error('playwright module exposed no chromium export');
   } catch (e) {
     emitAndExit({ launched: false, error: 'playwright not available: ' + (e && e.message ? e.message : String(e)) });
     return;
