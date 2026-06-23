@@ -5,8 +5,20 @@
  */
 
 import { withTx } from './tx';
-import type { NewTask, TaskPatch, TaskqDb, TaskRow, TaskStatus } from './types';
+import type { HoldDisposition, NewTask, TaskPatch, TaskqDb, TaskRow, TaskStatus } from './types';
+import { isParkedStatus } from './types';
 import { assertValidNewTask } from './validate';
+
+/**
+ * The disposition column value for a target `status`: a PARKED status carries a
+ * {@link HoldDisposition} (the `requested` one, or the safe `needs_owner` default
+ * — a park never strands silently); a non-parked status carries none. The single
+ * place the "parked ⇒ has a disposition, un-park ⇒ cleared" invariant is encoded.
+ */
+export function dispositionFor(status: TaskStatus, requested?: HoldDisposition | null): HoldDisposition | null {
+  if (!isParkedStatus(status)) return null;
+  return requested ?? 'needs_owner';
+}
 
 /** Where a task lands relative to the existing list (by `ord`). */
 export type Position =
@@ -42,6 +54,17 @@ export function listTasks(db: TaskqDb, opts: { status?: TaskStatus } = {}): Task
   return db.query(`SELECT * FROM tasks ORDER BY ord ASC, id ASC`).all() as TaskRow[];
 }
 
+/**
+ * The parked tasks whose disposition is `needs_owner` — the "a HUMAN must act"
+ * worklist (no automatic resolver: no retry, no follow-up task, no dep). This is
+ * the actionable subset of all holds; everything else is awaiting an automation.
+ */
+export function listNeedsOwner(db: TaskqDb): TaskRow[] {
+  return db
+    .query(`SELECT * FROM tasks WHERE hold_disposition = 'needs_owner' ORDER BY ord ASC, id ASC`)
+    .all() as TaskRow[];
+}
+
 /** Compute the `ord` value for a target position. Throws if an anchor is gone. */
 export function ordFor(db: TaskqDb, position: Position): number {
   if (position.at === 'top') {
@@ -74,11 +97,15 @@ export function addTask(db: TaskqDb, draft: NewTask, position: Position = { at: 
   return withTx(db, () => {
     if (draft.slug) assertSlugFree(db, draft.slug, null);
     const ord = ordFor(db, position);
+    const status = draft.status ?? 'ready';
+    // A task created directly in a parked status still gets a disposition (the
+    // contract — never a silent strand); a non-parked status carries none.
+    const disposition = dispositionFor(status, draft.hold_disposition);
     const res = db.run(
-      `INSERT INTO tasks (ord, status, slug, title, body, repo, model, think, fast, group_key, serial_group, recur_n, recur_interval_ms, is_template, is_saved, max_attempts, parent_id, note)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tasks (ord, status, slug, title, body, repo, model, think, fast, group_key, serial_group, recur_n, recur_interval_ms, is_template, is_saved, max_attempts, parent_id, note, hold_disposition, resolver_ref)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ord,
-      draft.status ?? 'ready',
+      status,
       draft.slug ?? null,
       draft.title.trim(),
       draft.body ?? null,
@@ -95,6 +122,8 @@ export function addTask(db: TaskqDb, draft: NewTask, position: Position = { at: 
       draft.max_attempts ?? null,
       draft.parent_id ?? null,
       draft.note ?? null,
+      disposition,
+      disposition ? (draft.resolver_ref ?? null) : null,
     );
     const id = Number(res.lastInsertRowid);
     for (const slug of dedupe(draft.needs ?? [])) {
@@ -145,6 +174,14 @@ export function updateTask(db: TaskqDb, id: number, patch: TaskPatch): void {
     if (patch.max_attempts !== undefined) set('max_attempts', patch.max_attempts ?? null);
     if (patch.parent_id !== undefined) set('parent_id', patch.parent_id ?? null);
     if (patch.note !== undefined) set('note', patch.note ?? null);
+    // Disposition: an explicit patch wins; otherwise a status change re-derives it
+    // (un-parking clears it, parking without one stamps the safe default) so the
+    // "parked ⇒ has a disposition" invariant holds through edits too.
+    if (patch.hold_disposition !== undefined) set('hold_disposition', patch.hold_disposition ?? null);
+    else if (patch.status !== undefined)
+      set('hold_disposition', dispositionFor(patch.status, current.hold_disposition as HoldDisposition | null));
+    if (patch.resolver_ref !== undefined) set('resolver_ref', patch.resolver_ref ?? null);
+    else if (patch.status !== undefined && !isParkedStatus(patch.status)) set('resolver_ref', null);
 
     if (sets.length) {
       db.run(`UPDATE tasks SET ${sets.join(', ')}, updated_at = ${NOW} WHERE id = ?`, ...vals, id);
@@ -158,12 +195,75 @@ export function updateTask(db: TaskqDb, id: number, patch: TaskPatch): void {
   });
 }
 
-/** Set a task's status (+ optional note, e.g. why it's on_hold/failed). */
-export function setStatus(db: TaskqDb, id: number, status: TaskStatus, note?: string | null): void {
-  const res =
-    note === undefined
-      ? db.run(`UPDATE tasks SET status = ?, updated_at = ${NOW} WHERE id = ?`, status, id)
-      : db.run(`UPDATE tasks SET status = ?, note = ?, updated_at = ${NOW} WHERE id = ?`, status, note, id);
+/**
+ * Set a task's status (+ optional note, e.g. why it's on_hold/failed). The
+ * hold-disposition is managed automatically as part of the transition:
+ *   - to a PARKED status → stamp `disposition` (or the safe `needs_owner` default),
+ *     so a manual hold / `taskq status … failed` never strands silently, and
+ *   - to a non-parked status → CLEAR the disposition + resolver (the hold is over).
+ * `setStatus` is the no-resolver park; use {@link parkTask} when the park has a
+ * `resolver_ref` (awaiting_task / awaiting_dependency) — it always clears the
+ * resolver so a leftover one can't mislabel a fresh hold.
+ */
+export function setStatus(
+  db: TaskqDb,
+  id: number,
+  status: TaskStatus,
+  note?: string | null,
+  disposition?: HoldDisposition | null,
+): void {
+  const sets = [`status = ?`, `hold_disposition = ?`, `resolver_ref = NULL`];
+  const vals: unknown[] = [status, dispositionFor(status, disposition)];
+  if (note !== undefined) {
+    sets.push(`note = ?`);
+    vals.push(note);
+  }
+  const res = db.run(`UPDATE tasks SET ${sets.join(', ')}, updated_at = ${NOW} WHERE id = ?`, ...vals, id);
+  if (res.changes === 0) throw new Error(`task ${id} not found`);
+}
+
+/** Options for {@link parkTask} — the resolver + (for awaiting_retry) the retry time. */
+export interface ParkOpts {
+  /** The human reason (stamped on `note`). Omit to leave the existing note. */
+  note?: string | null;
+  /** Resolver slug/id for `awaiting_task` / `awaiting_dependency`. */
+  resolverRef?: string | null;
+  /**
+   * For `awaiting_retry`: the epoch-ms the engine will next consider it eligible,
+   * written to `recur_next_at` (the universal "not eligible until" gate). The
+   * bounded-backoff failure path sets this itself; pass it here when parking a
+   * retry by hand.
+   */
+  retryAt?: number | null;
+}
+
+/**
+ * Park a task in a hold WITH its full disposition — the canonical "this is held,
+ * and here's who/what unblocks it" primitive. Unlike {@link setStatus} it carries
+ * a `resolver_ref` (and an optional `retryAt`), so the rich dispositions
+ * (`awaiting_task` naming a follow-up, `awaiting_dependency` naming the blocking
+ * slug, `awaiting_retry` with its time) are expressible in one atomic write.
+ * Throws if `status` isn't a parked status — parking is the whole point.
+ */
+export function parkTask(
+  db: TaskqDb,
+  id: number,
+  status: TaskStatus,
+  disposition: HoldDisposition,
+  opts: ParkOpts = {},
+): void {
+  if (!isParkedStatus(status)) throw new Error(`parkTask: ${status} is not a parked status`);
+  const sets = [`status = ?`, `hold_disposition = ?`, `resolver_ref = ?`];
+  const vals: unknown[] = [status, disposition, opts.resolverRef ?? null];
+  if (opts.note !== undefined) {
+    sets.push(`note = ?`);
+    vals.push(opts.note);
+  }
+  if (opts.retryAt !== undefined) {
+    sets.push(`recur_next_at = ?`);
+    vals.push(opts.retryAt);
+  }
+  const res = db.run(`UPDATE tasks SET ${sets.join(', ')}, updated_at = ${NOW} WHERE id = ?`, ...vals, id);
   if (res.changes === 0) throw new Error(`task ${id} not found`);
 }
 

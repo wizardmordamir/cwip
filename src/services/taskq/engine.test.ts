@@ -15,20 +15,23 @@ import {
   releaseLease,
   revertCompletion,
 } from './claim';
-import { depsSatisfied } from './deps';
+import { depsSatisfied, unmetNeeds } from './deps';
 import { isTimeRecurDue } from './recurrence';
 import { migrate, SCHEMA_VERSION } from './schema';
 import {
   addTask,
+  dispositionFor,
   getTask,
+  listNeedsOwner,
   listSerialGroups,
   listTasks,
   moveTask,
+  parkTask,
   setSerialGroup,
   setStatus,
   updateTask,
 } from './tasks';
-import type { TaskqDb } from './types';
+import { HOLD_DISPOSITIONS, isHoldDisposition, isParkedStatus, PARKED_STATUSES, type TaskqDb } from './types';
 
 let db: TaskqDb;
 const T0 = 1_000_000;
@@ -423,5 +426,206 @@ describe('revertCompletion: false-done gate', () => {
     // Downstream must still be blocked — upstream never reached 'done'.
     expect(depsSatisfied(db, downstream)).toBe(false);
     expect(nextEligibleId(db, T0)).toBeNull();
+  });
+});
+
+describe('hold disposition: who unblocks a parked task + when', () => {
+  // ── pure helpers ──────────────────────────────────────────────────────────
+  test('isParkedStatus / dispositionFor / isHoldDisposition', () => {
+    for (const s of PARKED_STATUSES) expect(isParkedStatus(s)).toBe(true);
+    for (const s of ['ready', 'claimed', 'done', 'pending_triage'] as const) expect(isParkedStatus(s)).toBe(false);
+    // parked status → requested disposition, else the safe needs_owner default.
+    expect(dispositionFor('on_hold')).toBe('needs_owner');
+    expect(dispositionFor('failed', 'awaiting_task')).toBe('awaiting_task');
+    // non-parked status → no disposition (cleared on un-park).
+    expect(dispositionFor('ready', 'awaiting_task')).toBeNull();
+    expect(dispositionFor('done')).toBeNull();
+    for (const d of HOLD_DISPOSITIONS) expect(isHoldDisposition(d)).toBe(true);
+    expect(isHoldDisposition('nonsense')).toBe(false);
+  });
+
+  // ── the CONTRACT: every park path stamps a disposition ──────────────────────
+  test('setStatus to a parked status defaults to needs_owner; un-park clears it', () => {
+    const id = addTask(db, { title: 'x' });
+    expect(getTask(db, id)?.hold_disposition).toBeNull(); // ready → none
+
+    setStatus(db, id, 'on_hold', 'manual hold'); // the manual `taskq hold` path
+    let t = getTask(db, id)!;
+    expect(t.status).toBe('on_hold');
+    expect(t.hold_disposition).toBe('needs_owner'); // never a silent strand
+    expect(t.note).toBe('manual hold');
+
+    setStatus(db, id, 'ready'); // unhold
+    t = getTask(db, id)!;
+    expect(t.hold_disposition).toBeNull();
+    expect(t.resolver_ref).toBeNull();
+  });
+
+  test('setStatus honors an explicit disposition for a parked status', () => {
+    const id = addTask(db, { title: 'x' });
+    setStatus(db, id, 'not_ready', 'waiting on epic', 'awaiting_task');
+    expect(getTask(db, id)?.hold_disposition).toBe('awaiting_task');
+  });
+
+  test('parkTask carries a resolver_ref and (for awaiting_retry) a retry time', () => {
+    const dep = addTask(db, { title: 'down' });
+    parkTask(db, dep, 'blocked', 'awaiting_dependency', { note: 'blocked on up', resolverRef: 'up' });
+    let t = getTask(db, dep)!;
+    expect(t.status).toBe('blocked');
+    expect(t.hold_disposition).toBe('awaiting_dependency');
+    expect(t.resolver_ref).toBe('up');
+
+    const retry = addTask(db, { title: 'retry-by-hand' });
+    parkTask(db, retry, 'failed', 'awaiting_retry', { retryAt: T0 + 5000 });
+    t = getTask(db, retry)!;
+    expect(t.hold_disposition).toBe('awaiting_retry');
+    expect(t.recur_next_at).toBe(T0 + 5000); // retry time reuses recur_next_at
+
+    expect(() => parkTask(db, retry, 'ready' as never, 'needs_owner')).toThrow(/not a parked status/);
+  });
+
+  // ── engine park paths ───────────────────────────────────────────────────────
+  test('retry backoff → awaiting_retry; a successful claim clears it', () => {
+    const id = addTask(db, { title: 'flaky' });
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    failTask(db, id, 'transient blip', T0, { backoff: { baseMs: 60_000, jitter: 0 } });
+    const t = getTask(db, id)!;
+    expect(t.status).toBe('ready'); // re-queued, held out by recur_next_at
+    expect(t.hold_disposition).toBe('awaiting_retry');
+    expect(t.recur_next_at).toBe(T0 + 60_000); // the retry time
+    // Claiming it (after the backoff) clears the disposition — it's running now.
+    claim(db, id, { workerId: 'w', nowMs: T0 + 60_000 });
+    expect(getTask(db, id)?.hold_disposition).toBeNull();
+  });
+
+  test('exhausted retries → failed + needs_owner (no auto-resolver remains)', () => {
+    const id = addTask(db, { title: 'always', max_attempts: 1 });
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    const out = failTask(db, id, 'boom', T0);
+    expect(out.terminal).toBe(true);
+    const t = getTask(db, id)!;
+    expect(t.status).toBe('failed');
+    expect(t.hold_disposition).toBe('needs_owner');
+    expect(t.resolver_ref).toBeNull();
+  });
+
+  test('failHard / permanent → failed + needs_owner', () => {
+    const id = addTask(db, { title: 'impossible' });
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    failHard(db, id, 'needs a human', T0);
+    expect(getTask(db, id)?.hold_disposition).toBe('needs_owner');
+  });
+
+  test('saved (no interval) completion parks on_hold + needs_owner; one-shot done clears', () => {
+    const saved = addTask(db, { title: 'saved', is_saved: true });
+    claim(db, saved, { workerId: 'w', nowMs: T0 });
+    completeTask(db, saved, {}, T0 + 1);
+    const s = getTask(db, saved)!;
+    expect(s.status).toBe('on_hold');
+    expect(s.hold_disposition).toBe('needs_owner');
+
+    const one = addTask(db, { title: 'one' });
+    claim(db, one, { workerId: 'w', nowMs: T0 });
+    completeTask(db, one, {}, T0 + 1);
+    expect(getTask(db, one)?.hold_disposition).toBeNull(); // done is not a park
+  });
+
+  // ── THE rfc-31j FIX: a false-done revert can NEVER be a bare hold ────────────
+  test('revertCompletion defaults to needs_owner — a bare revert can never strand', () => {
+    const id = addTask(db, { title: 'x' });
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    // The legacy call shape (no disposition) — must still get a disposition.
+    revertCompletion(db, id, 'needs_input', 'empty-done: landed no commits', T0 + 1);
+    const t = getTask(db, id)!;
+    expect(t.status).toBe('needs_input');
+    expect(t.hold_disposition).toBe('needs_owner');
+  });
+
+  test('revertCompletion can name a heal follow-up (awaiting_task + resolver_ref)', () => {
+    const id = addTask(db, { title: 'regressed' });
+    claim(db, id, { workerId: 'w', nowMs: T0 });
+    revertCompletion(db, id, 'on_hold', 'regressed the build', T0 + 1, 'awaiting_task', 'heal-ru-integration');
+    const t = getTask(db, id)!;
+    expect(t.status).toBe('on_hold');
+    expect(t.hold_disposition).toBe('awaiting_task');
+    expect(t.resolver_ref).toBe('heal-ru-integration');
+    // A resolver-bearing revert still resets attempts + drops the lease (rfc-31j guarantees).
+    expect(t.attempts).toBe(0);
+    expect(reapExpired(db, T0 + 1_000_000)).toBe(0);
+  });
+
+  // ── creation + listing ──────────────────────────────────────────────────────
+  test('addTask in a parked status stamps a disposition; explicit one + resolver honored', () => {
+    const def = addTask(db, { title: 'imported-hold', status: 'on_hold' });
+    expect(getTask(db, def)?.hold_disposition).toBe('needs_owner');
+
+    const child = addTask(db, {
+      title: 'epic-child',
+      status: 'not_ready',
+      hold_disposition: 'awaiting_task',
+      resolver_ref: 'epic-1',
+    });
+    const c = getTask(db, child)!;
+    expect(c.hold_disposition).toBe('awaiting_task');
+    expect(c.resolver_ref).toBe('epic-1');
+  });
+
+  test('updateTask clears the disposition when moving to a non-parked status', () => {
+    const id = addTask(db, { title: 'x', status: 'on_hold' });
+    expect(getTask(db, id)?.hold_disposition).toBe('needs_owner');
+    updateTask(db, id, { status: 'ready' });
+    expect(getTask(db, id)?.hold_disposition).toBeNull();
+    // An explicit disposition patch is honored.
+    updateTask(db, id, { status: 'failed', hold_disposition: 'awaiting_retry' });
+    expect(getTask(db, id)?.hold_disposition).toBe('awaiting_retry');
+  });
+
+  test('listNeedsOwner is the actionable subset (needs_owner holds only)', () => {
+    const a = addTask(db, { title: 'a', status: 'on_hold' }); // needs_owner
+    addTask(db, { title: 'b', status: 'not_ready', hold_disposition: 'awaiting_task', resolver_ref: 'x' });
+    addTask(db, { title: 'c' }); // ready — not parked
+    const owners = listNeedsOwner(db).map((t) => t.id);
+    expect(owners).toEqual([a]);
+  });
+
+  test('unmetNeeds names the blocking slugs (the awaiting_dependency resolver)', () => {
+    const dep = addTask(db, { title: 'dep', slug: 'd1' }, { at: 'bottom' });
+    addTask(db, { title: 'dep2', slug: 'd2' }, { at: 'bottom' });
+    const t = addTask(db, { title: 't', needs: ['d1', 'd2'] }, { at: 'bottom' });
+    expect(unmetNeeds(db, t)).toEqual(['d1', 'd2']);
+    setStatus(db, dep, 'done');
+    expect(unmetNeeds(db, t)).toEqual(['d2']); // d1 satisfied
+  });
+});
+
+describe('migration v11: disposition columns + backfill', () => {
+  test('classifies pre-existing parked rows (blocked → awaiting_dependency, others → needs_owner)', () => {
+    // Build a v10-shaped DB (no disposition columns), seed parked rows, then migrate.
+    const raw = new Database(':memory:') as unknown as TaskqDb;
+    raw.exec('PRAGMA foreign_keys = ON');
+    // Re-run the real migrations only through v10 by stamping meta then migrating —
+    // simplest: migrate fully, then NULL out the disposition to simulate legacy rows.
+    migrate(raw);
+    const blocked = addTask(raw, { title: 'blocked-task', status: 'blocked' });
+    const upstream = addTask(raw, { title: 'up', slug: 'up' });
+    raw.run(`INSERT INTO task_deps (task_id, needs_slug) VALUES (?, ?)`, blocked, 'up');
+    const onHold = addTask(raw, { title: 'held', status: 'on_hold' });
+    // Simulate legacy rows that predate the column (disposition not yet set).
+    raw.run(`UPDATE tasks SET hold_disposition = NULL, resolver_ref = NULL`);
+    // Re-run the backfill UPDATEs (idempotent — they only touch NULL rows).
+    raw.run(
+      `UPDATE tasks SET hold_disposition = 'awaiting_dependency',
+         resolver_ref = (SELECT group_concat(d.needs_slug, ',') FROM task_deps d
+            JOIN tasks x ON x.slug = d.needs_slug AND x.status <> 'done' WHERE d.task_id = tasks.id)
+       WHERE status = 'blocked' AND hold_disposition IS NULL`,
+    );
+    raw.run(
+      `UPDATE tasks SET hold_disposition = 'needs_owner'
+       WHERE status IN ('on_hold','needs_input','not_ready','failed') AND hold_disposition IS NULL`,
+    );
+    expect(getTask(raw, blocked)?.hold_disposition).toBe('awaiting_dependency');
+    expect(getTask(raw, blocked)?.resolver_ref).toBe('up');
+    expect(getTask(raw, onHold)?.hold_disposition).toBe('needs_owner');
+    void upstream;
   });
 });

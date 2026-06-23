@@ -58,3 +58,43 @@ test('hold / unhold flips status', () => {
   run('unhold', String(id));
   expect((JSON.parse(run('show', String(id), '--json').stdout) as { status: string }).status).toBe('ready');
 });
+
+test('hold stamps a needs_owner disposition; unhold clears it; show exposes retry_at', () => {
+  const id = (JSON.parse(run('add', 'disp').stdout) as { id: number }).id;
+  run('hold', String(id), '--note', 'waiting on a decision');
+  let shown = JSON.parse(run('show', String(id), '--json').stdout) as {
+    hold_disposition: string | null;
+    resolver_ref: string | null;
+    retry_at: number | null;
+  };
+  expect(shown.hold_disposition).toBe('needs_owner'); // a manual hold never strands silently
+  expect(shown.retry_at).toBeNull();
+  run('unhold', String(id));
+  shown = JSON.parse(run('show', String(id), '--json').stdout) as typeof shown;
+  expect(shown.hold_disposition).toBeNull();
+});
+
+test('status --disposition + --resolver parks with a resolver; ls --needs-owner filters', () => {
+  const owner = (JSON.parse(run('add', 'needs-a-human').stdout) as { id: number }).id;
+  run('status', String(owner), 'not_ready'); // parked → needs_owner default
+
+  const awaited = (JSON.parse(run('add', 'awaits-heal').stdout) as { id: number }).id;
+  run('status', String(awaited), 'on_hold', '--disposition', 'awaiting_task', '--resolver', 'heal-ru-integration');
+  const shown = JSON.parse(run('show', String(awaited), '--json').stdout) as {
+    hold_disposition: string;
+    resolver_ref: string;
+  };
+  expect(shown.hold_disposition).toBe('awaiting_task');
+  expect(shown.resolver_ref).toBe('heal-ru-integration');
+
+  // --needs-owner returns the human-actionable hold but NOT the awaiting_task one.
+  const owners = JSON.parse(run('ls', '--needs-owner', '--json').stdout) as { id: number }[];
+  const ids = owners.map((t) => t.id);
+  expect(ids).toContain(owner);
+  expect(ids).not.toContain(awaited);
+
+  // A bad disposition is rejected with a clear message.
+  const bad = run('status', String(owner), 'on_hold', '--disposition', 'whoops');
+  expect(bad.code).toBe(1);
+  expect(bad.stderr).toContain('bad --disposition');
+});

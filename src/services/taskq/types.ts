@@ -56,6 +56,49 @@ export const DISPATCHABLE_STATUS: TaskStatus = 'ready';
 /** Statuses a human/UI may set directly (runtime states are engine-owned). */
 export const AUTHORABLE_STATUSES: TaskStatus[] = ['ready', 'on_hold', 'not_ready', 'pending_triage'];
 
+/**
+ * The PARKED statuses — a task in one of these is NOT dispatchable and is waiting
+ * on something. Every park MUST carry a {@link HoldDisposition} so the owner can
+ * tell at a glance whether action is needed (the contract: a park may never
+ * silently strand a task). The non-parked statuses (pending_triage, ready,
+ * claimed, done) carry no disposition — it's cleared on the way out of a hold.
+ */
+export const PARKED_STATUSES = ['blocked', 'on_hold', 'needs_input', 'not_ready', 'failed'] as const;
+export type ParkedStatus = (typeof PARKED_STATUSES)[number];
+
+/** True when `status` is a PARKED status (a hold that needs a disposition). */
+export function isParkedStatus(status: TaskStatus): status is ParkedStatus {
+  return (PARKED_STATUSES as readonly string[]).includes(status);
+}
+
+// ── Hold disposition (who unblocks a parked task + when) ───────────────────────
+
+/**
+ * For a PARKED task: WHO unblocks it and WHEN — machine-set, never free-text — so
+ * a glance tells the owner whether *they* must act. The motivating bug: a
+ * false-done task reverted to a bare `on_hold` with only a prose note, no retry
+ * and no heal — silently STUCK while blocking its dependents. So every park path
+ * now declares a disposition; if it cannot guarantee an auto-resolution it MUST
+ * choose `needs_owner` (a park may never silently strand a task).
+ *
+ *   needs_owner        — only a human can unblock it (a decision, credential, or
+ *                        triage). The safe default: pick it whenever no automatic
+ *                        resolution is guaranteed.
+ *   awaiting_task      — another task/automation will resolve it; `resolver_ref`
+ *                        names that task (slug/id) — e.g. a filed heal follow-up.
+ *   awaiting_retry     — the engine will auto-retry; the retry time is the task's
+ *                        `recur_next_at` (the bounded-backoff "not eligible until").
+ *   awaiting_dependency— an unmet `needs:` dep blocks it; `resolver_ref` carries
+ *                        the blocking slug(s). Auto-clears when the dep completes.
+ */
+export const HOLD_DISPOSITIONS = ['needs_owner', 'awaiting_task', 'awaiting_retry', 'awaiting_dependency'] as const;
+export type HoldDisposition = (typeof HOLD_DISPOSITIONS)[number];
+
+/** True when `d` is a valid {@link HoldDisposition}. */
+export function isHoldDisposition(d: string): d is HoldDisposition {
+  return (HOLD_DISPOSITIONS as readonly string[]).includes(d);
+}
+
 // ── Model / thinking vocabulary (canonical home; rubato defers to this) ────────
 
 export type ThinkLevel = 'off' | 'low' | 'medium' | 'high' | 'max';
@@ -116,8 +159,21 @@ export interface TaskRow {
    */
   max_attempts: number | null;
   parent_id: number | null;
-  /** Why it's on_hold / blocked / needs_input / failed. */
+  /** Why it's on_hold / blocked / needs_input / failed (the human reason). */
   note: string | null;
+  /**
+   * For a PARKED task: WHO/WHAT unblocks it (a {@link HoldDisposition}). Set by
+   * every park path, cleared on un-park. null ⇒ not parked (or a legacy row not
+   * yet backfilled). See {@link HOLD_DISPOSITIONS}.
+   */
+  hold_disposition: string | null;
+  /**
+   * The resolver for `awaiting_task`/`awaiting_dependency`: the slug (or id) of
+   * the task/automation/dep that will unblock this. null for `needs_owner` (no
+   * automatic resolver) and `awaiting_retry` (the resolver is the engine itself,
+   * timed by `recur_next_at`).
+   */
+  resolver_ref: string | null;
   triage_state: string | null;
   complexity: string | null;
   created_at: string;
@@ -153,6 +209,14 @@ export interface NewTask {
   max_attempts?: number | null;
   parent_id?: number;
   note?: string;
+  /**
+   * When creating a task directly in a PARKED status, WHO/WHAT unblocks it. Omit
+   * for a non-parked status; omit on a parked status and the engine stamps the
+   * safe default (`needs_owner`) — a created park never strands silently either.
+   */
+  hold_disposition?: HoldDisposition;
+  /** Resolver slug/id for `awaiting_task` / `awaiting_dependency` (see {@link HoldDisposition}). */
+  resolver_ref?: string | null;
   /** `(needs:…)` slugs this task waits on. */
   needs?: string[];
 }

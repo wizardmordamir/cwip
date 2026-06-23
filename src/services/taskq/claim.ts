@@ -2,7 +2,7 @@ import { type BackoffOpts, backoffMs } from './backoff';
 import { nextRecurAt } from './recurrence';
 import { getTask } from './tasks';
 import { withTx } from './tx';
-import type { ClaimFilters, TaskqDb, TaskRow } from './types';
+import type { ClaimFilters, HoldDisposition, TaskqDb, TaskRow } from './types';
 
 const NOW = `strftime('%Y-%m-%dT%H:%M:%fZ','now')`;
 /** Default lease TTL: a worker must heartbeat within this or be reaped. */
@@ -122,7 +122,7 @@ function insertLease(db: TaskqDb, taskId: number, opts: ClaimOpts): void {
 export function claim(db: TaskqDb, id: number, opts: ClaimOpts): boolean {
   return withTx(db, () => {
     const res = db.run(
-      `UPDATE tasks SET status = 'claimed', updated_at = ${NOW} WHERE id = ? AND status = 'ready'`,
+      `UPDATE tasks SET status = 'claimed', hold_disposition = NULL, resolver_ref = NULL, updated_at = ${NOW} WHERE id = ? AND status = 'ready'`,
       id,
     );
     if (res.changes === 0) return false; // lost the race / no longer ready
@@ -134,7 +134,10 @@ export function claim(db: TaskqDb, id: number, opts: ClaimOpts): boolean {
         .query(`SELECT id FROM tasks WHERE group_key = ? AND status = 'ready' AND id <> ?`)
         .all(task.group_key, id) as { id: number }[];
       for (const m of members) {
-        db.run(`UPDATE tasks SET status = 'claimed', updated_at = ${NOW} WHERE id = ?`, m.id);
+        db.run(
+          `UPDATE tasks SET status = 'claimed', hold_disposition = NULL, resolver_ref = NULL, updated_at = ${NOW} WHERE id = ?`,
+          m.id,
+        );
         insertLease(db, m.id, opts);
       }
     }
@@ -148,7 +151,7 @@ export function claimNext(db: TaskqDb, opts: ClaimOpts): TaskRow | null {
     const id = nextEligibleId(db, opts.nowMs, opts.filters);
     if (id == null) return null;
     const res = db.run(
-      `UPDATE tasks SET status = 'claimed', updated_at = ${NOW} WHERE id = ? AND status = 'ready'`,
+      `UPDATE tasks SET status = 'claimed', hold_disposition = NULL, resolver_ref = NULL, updated_at = ${NOW} WHERE id = ? AND status = 'ready'`,
       id,
     );
     if (res.changes === 0) return null;
@@ -159,7 +162,10 @@ export function claimNext(db: TaskqDb, opts: ClaimOpts): TaskRow | null {
         .query(`SELECT id FROM tasks WHERE group_key = ? AND status = 'ready' AND id <> ?`)
         .all(task.group_key, id) as { id: number }[];
       for (const m of members) {
-        db.run(`UPDATE tasks SET status = 'claimed', updated_at = ${NOW} WHERE id = ?`, m.id);
+        db.run(
+          `UPDATE tasks SET status = 'claimed', hold_disposition = NULL, resolver_ref = NULL, updated_at = ${NOW} WHERE id = ?`,
+          m.id,
+        );
         insertLease(db, m.id, opts);
       }
     }
@@ -220,10 +226,18 @@ export function completeTask(db: TaskqDb, taskId: number, info: CompleteInfo, no
         taskId,
       );
     } else if (task.is_saved) {
-      // Saved without interval: park until the user manually re-queues it.
-      db.run(`UPDATE tasks SET status = 'on_hold', attempts = 0, updated_at = ${NOW} WHERE id = ?`, taskId);
+      // Saved without interval: park until the user manually re-queues it — the
+      // owner is the resolver, so the disposition is needs_owner.
+      db.run(
+        `UPDATE tasks SET status = 'on_hold', hold_disposition = 'needs_owner', resolver_ref = NULL, attempts = 0, updated_at = ${NOW} WHERE id = ?`,
+        taskId,
+      );
     } else {
-      db.run(`UPDATE tasks SET status = 'done', attempts = 0, updated_at = ${NOW} WHERE id = ?`, taskId);
+      // Done is not a park — clear any disposition the task carried.
+      db.run(
+        `UPDATE tasks SET status = 'done', hold_disposition = NULL, resolver_ref = NULL, attempts = 0, updated_at = ${NOW} WHERE id = ?`,
+        taskId,
+      );
     }
   });
 }
@@ -279,8 +293,15 @@ function applyFailure(db: TaskqDb, taskId: number, reason: string, nowMs: number
 
   if (willRetry) {
     const retryAt = nowMs + backoffMs(attempts, opts.backoff, opts.rng);
+    // Re-queued to `ready` but held out of the pool by a future `recur_next_at` —
+    // the engine itself is the resolver, so the disposition is `awaiting_retry`
+    // (its time IS `recur_next_at`; no resolver_ref). The disposition rides on a
+    // `ready` row deliberately: the existing eligibility gate (status='ready' AND
+    // recur_next_at<=now) still re-dispatches it without new scheduling plumbing,
+    // while the owner sees "auto-retrying, no action needed" rather than a bare
+    // ready row. `claim` clears it the moment the task actually runs again.
     db.run(
-      `UPDATE tasks SET status = 'ready', attempts = ?, recur_next_at = ?, note = ?, updated_at = ${NOW} WHERE id = ?`,
+      `UPDATE tasks SET status = 'ready', hold_disposition = 'awaiting_retry', resolver_ref = NULL, attempts = ?, recur_next_at = ?, note = ?, updated_at = ${NOW} WHERE id = ?`,
       attempts,
       retryAt,
       reason,
@@ -289,8 +310,11 @@ function applyFailure(db: TaskqDb, taskId: number, reason: string, nowMs: number
     return { status: 'ready', attempts, maxAttempts, terminal: false, retryAt };
   }
 
+  // Exhausted (or permanent): park terminal `failed`. No automatic resolver remains
+  // — the attempt budget is spent — so the disposition is needs_owner (a human must
+  // decide: re-queue, change the task, or file a heal). Never a silent strand.
   db.run(
-    `UPDATE tasks SET status = 'failed', attempts = ?, note = ?, updated_at = ${NOW} WHERE id = ?`,
+    `UPDATE tasks SET status = 'failed', hold_disposition = 'needs_owner', resolver_ref = NULL, attempts = ?, note = ?, updated_at = ${NOW} WHERE id = ?`,
     attempts,
     reason,
     taskId,
@@ -327,6 +351,14 @@ export function failHard(db: TaskqDb, taskId: number, reason: string, nowMs: num
  * would later route the still-leased task back through the retry machinery and
  * undo the hold. Attempts are reset to 0: a false-done is NOT a failure (the
  * worker ran successfully), so a human re-queue starts with a fresh budget.
+ *
+ * THE rfc-31j FIX: a revert is a PARK, so it MUST carry a {@link HoldDisposition}
+ * — the bug was a false-done reverted to a bare `on_hold` (no retry, no heal,
+ * nobody owning it) while it blocked its dependents. The caller (the done-gate)
+ * chooses the resolution: `awaiting_task` + a `resolverRef` to a filed heal
+ * follow-up, `awaiting_retry`, or `needs_owner`. `disposition` DEFAULTS to
+ * `needs_owner` so even a caller that passes nothing can't strand the task — the
+ * single most important guarantee here.
  */
 export function revertCompletion(
   db: TaskqDb,
@@ -334,12 +366,16 @@ export function revertCompletion(
   status: 'on_hold' | 'needs_input',
   note: string,
   _nowMs: number,
+  disposition: HoldDisposition = 'needs_owner',
+  resolverRef: string | null = null,
 ): void {
   withTx(db, () => {
     db.run(`DELETE FROM leases WHERE task_id = ?`, taskId);
     db.run(
-      `UPDATE tasks SET status = ?, note = ?, attempts = 0, updated_at = ${NOW} WHERE id = ?`,
+      `UPDATE tasks SET status = ?, hold_disposition = ?, resolver_ref = ?, note = ?, attempts = 0, updated_at = ${NOW} WHERE id = ?`,
       status,
+      disposition,
+      resolverRef,
       note,
       taskId,
     );

@@ -37,6 +37,13 @@ function markers(task: TaskRow, needs: string[]): string {
     const ceiling = task.max_attempts != null ? `/${task.max_attempts}` : '';
     parts.push(`attempts:${task.attempts}${ceiling}`);
   }
+  // Hold disposition: WHO/WHAT unblocks a parked task, so a glance at the mirror
+  // shows whether the owner must act (`hold:needs_owner`) or it's auto-resolving
+  // (`hold:awaiting_task→<resolver>`). recur_next_at is the retry time for awaiting_retry.
+  if (task.hold_disposition) {
+    const ref = task.resolver_ref ? `→${task.resolver_ref}` : '';
+    parts.push(`hold:${task.hold_disposition}${ref}`);
+  }
   return parts.length ? ` [${parts.join(' ')}]` : '';
 }
 

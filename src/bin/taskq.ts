@@ -19,13 +19,17 @@ import {
   failTask,
   getNeeds,
   getTask,
+  type HoldDisposition,
   heartbeat,
+  isHoldDisposition,
+  listNeedsOwner,
   listTasks,
   migrate,
   moveTask,
   type NewTask,
   nextEligibleId,
   type Position,
+  parkTask,
   reapExpired,
   releaseLease,
   renderTasksMarkdown,
@@ -33,6 +37,7 @@ import {
   setStatus,
   type TaskPatch,
   type TaskqDb,
+  type TaskRow,
   taskqDbPath,
   taskqHome,
   updateTask,
@@ -41,16 +46,19 @@ import {
 const USAGE = `taskq — SQLite task queue
 
 Queue:
-  taskq ls [--status S] [--json]          list tasks
-  taskq show <id> [--json]                show one task
+  taskq ls [--status S] [--needs-owner] [--json]   list tasks (--needs-owner: only holds a HUMAN must act on)
+  taskq show <id> [--json]                show one task (incl. hold disposition + resolver + retry_at)
   taskq next [--repo R] [--model A,B]     print the next eligible task (no claim)
   taskq view [--write [path]]             render the markdown mirror (default ~/.taskq/TASKS.view.md)
 
 Author:
   taskq add "<title>" [opts]              create a task → prints its id
   taskq update <id> [opts]                patch a task
-  taskq hold <id> [--note T] | unhold <id>
-  taskq status <id> <state> [--note T]    set status (ready|on_hold|not_ready|pending_triage|…)
+  taskq hold <id> [--note T] | unhold <id>            (hold → needs_owner disposition)
+  taskq status <id> <state> [--note T] [--disposition D] [--resolver REF]
+                                          set status (ready|on_hold|not_ready|pending_triage|…);
+                                          a parked state defaults to needs_owner unless --disposition
+                                          is given (needs_owner|awaiting_task|awaiting_retry|awaiting_dependency)
   taskq rm <id>
 
 Run (orchestrator/worker):
@@ -147,6 +155,16 @@ function out(obj: unknown): void {
   process.stdout.write(`${JSON.stringify(obj, null, 2)}\n`);
 }
 
+/**
+ * Surface the awaiting_retry time as an explicit `retry_at` in the JSON. The
+ * engine reuses `recur_next_at` as the retry clock (no separate column), so a
+ * consumer reading disposition info shouldn't have to know that overload — expose
+ * it as `retry_at` when (and only when) the task is actually awaiting a retry.
+ */
+function withRetryAt(t: TaskRow): TaskRow & { retry_at: number | null } {
+  return { ...t, retry_at: t.hold_disposition === 'awaiting_retry' ? t.recur_next_at : null };
+}
+
 function main(argv: string[]): number {
   const args = argv.slice(2);
   if (!args.length || args[0] === '-h' || args[0] === '--help') {
@@ -170,11 +188,16 @@ function main(argv: string[]): number {
 
     case 'ls': {
       const status = str(flags, 'status') as NewTask['status'] | undefined;
-      const rows = listTasks(db, status ? { status } : {});
-      if (flags.json) out(rows);
+      // --needs-owner: the actionable worklist — parked tasks a HUMAN must unblock
+      // (no auto-resolver). Overrides --status (it's a disposition filter, not a status one).
+      const rows = flags['needs-owner'] ? listNeedsOwner(db) : listTasks(db, status ? { status } : {});
+      if (flags.json) out(rows.map(withRetryAt));
       else
-        for (const t of rows)
-          process.stdout.write(`#${t.id}\t${t.status}\t${t.title}${t.slug ? ` (id:${t.slug})` : ''}\n`);
+        for (const t of rows) {
+          // Surface the disposition inline so a hold's owner/timing is visible at a glance.
+          const disp = t.hold_disposition ? `\t${t.hold_disposition}${t.resolver_ref ? `→${t.resolver_ref}` : ''}` : '';
+          process.stdout.write(`#${t.id}\t${t.status}${disp}\t${t.title}${t.slug ? ` (id:${t.slug})` : ''}\n`);
+        }
       return 0;
     }
 
@@ -184,7 +207,7 @@ function main(argv: string[]): number {
         process.stderr.write(`task ${id()} not found\n`);
         return 1;
       }
-      out({ ...t, needs: getNeeds(db, t.id) });
+      out({ ...withRetryAt(t), needs: getNeeds(db, t.id) });
       return 0;
     }
 
@@ -293,7 +316,23 @@ function main(argv: string[]): number {
     case 'status': {
       const state = positional[1] as NewTask['status'];
       if (!state) throw new Error('status needs <id> <state>');
-      setStatus(db, id(), state, flags.note !== undefined ? (str(flags, 'note') ?? null) : undefined);
+      const disp = str(flags, 'disposition');
+      if (disp !== undefined && !isHoldDisposition(disp)) {
+        throw new Error(
+          `bad --disposition "${disp}" (use needs_owner|awaiting_task|awaiting_retry|awaiting_dependency)`,
+        );
+      }
+      const note = flags.note !== undefined ? (str(flags, 'note') ?? null) : undefined;
+      // A parked state gets its disposition (explicit --disposition, else the
+      // needs_owner default); a --resolver names the resolving task/dep. A resolver
+      // only sticks via parkTask (setStatus is the no-resolver path), so route
+      // through parkTask when both a disposition and a resolver are supplied.
+      const resolver = str(flags, 'resolver');
+      if (resolver !== undefined && disp) {
+        parkTask(db, id(), state, disp as HoldDisposition, { note, resolverRef: resolver });
+      } else {
+        setStatus(db, id(), state, note, disp as HoldDisposition | undefined);
+      }
       out({ id: id(), status: state });
       return 0;
     }

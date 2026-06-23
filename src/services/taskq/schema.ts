@@ -245,6 +245,43 @@ const MIGRATIONS: Migration[] = [
       db.exec(`ALTER TABLE tasks ADD COLUMN max_attempts INTEGER`);
     },
   },
+  {
+    // Structured hold-disposition: every PARKED task declares WHO unblocks it and
+    // WHEN (machine-set, not free-text), so a park can never silently strand a task
+    // (the rfc-31j bug: a false-done reverted to a bare on_hold — no retry, no heal —
+    // while blocking its dependents).
+    //   hold_disposition — {needs_owner | awaiting_task | awaiting_retry | awaiting_dependency}.
+    //   resolver_ref     — slug/id of the resolving task/dep (awaiting_task / awaiting_dependency).
+    // The retry time for `awaiting_retry` reuses the existing recur_next_at column
+    // (the backoff already writes it) — no new scheduling plumbing.
+    //
+    // One-time BACKFILL: classify every already-parked row that predates this column
+    // so the board isn't full of unclassified holds. `blocked` → awaiting_dependency
+    // (resolver = its unmet, non-done `needs:` slugs); every other parked status →
+    // needs_owner (the safe default — a human triages it). Only touches rows where
+    // hold_disposition IS NULL, so it's idempotent and additive.
+    version: 11,
+    up: (db) => {
+      db.exec(`ALTER TABLE tasks ADD COLUMN hold_disposition TEXT`);
+      db.exec(`ALTER TABLE tasks ADD COLUMN resolver_ref TEXT`);
+
+      // blocked → awaiting_dependency, with the unmet (non-done) needs slugs as the resolver.
+      db.run(
+        `UPDATE tasks SET hold_disposition = 'awaiting_dependency',
+           resolver_ref = (
+             SELECT group_concat(d.needs_slug, ',')
+               FROM task_deps d JOIN tasks x ON x.slug = d.needs_slug AND x.status <> 'done'
+              WHERE d.task_id = tasks.id
+           )
+         WHERE status = 'blocked' AND hold_disposition IS NULL`,
+      );
+      // Every other parked status with no disposition yet → needs_owner (a human triages it).
+      db.run(
+        `UPDATE tasks SET hold_disposition = 'needs_owner'
+         WHERE status IN ('on_hold', 'needs_input', 'not_ready', 'failed') AND hold_disposition IS NULL`,
+      );
+    },
+  },
 ];
 
 /** The latest schema version (the version the engine expects). */
