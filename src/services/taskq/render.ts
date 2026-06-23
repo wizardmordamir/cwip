@@ -65,6 +65,10 @@ export function renderTasksMarkdown(tasks: TaskRow[], needsByTask: Record<number
     '',
     '# taskq board',
     '',
+    '> 📐 Engineering standards: **`cursedbelt/STANDARDS.md`** — the one canonical source of truth',
+    '> (placement, reuse-not-duplicate, layering, Biome + ctgr/getOnly invariants, the worktree flow).',
+    '> Read it before working a task and build on the shared `cwip`/`cursedbelt` primitives.',
+    '',
   ];
   for (const status of RENDER_ORDER) {
     const group = byStatus.get(status) ?? [];
