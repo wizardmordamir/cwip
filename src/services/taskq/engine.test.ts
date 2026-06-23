@@ -390,6 +390,21 @@ describe('updateTask: clearing recur_n with null', () => {
   });
 });
 
+describe('noop_ok flag (false-done no-op exception)', () => {
+  test('defaults to 0; addTask stores the flag; updateTask toggles it', () => {
+    const plain = addTask(db, { title: 'code-change' });
+    expect(getTask(db, plain)?.noop_ok).toBe(0);
+
+    const audit = addTask(db, { title: 'audit', noop_ok: true });
+    expect(getTask(db, audit)?.noop_ok).toBe(1);
+
+    updateTask(db, plain, { noop_ok: true });
+    expect(getTask(db, plain)?.noop_ok).toBe(1);
+    updateTask(db, audit, { noop_ok: false });
+    expect(getTask(db, audit)?.noop_ok).toBe(0);
+  });
+});
+
 describe('revertCompletion: false-done gate', () => {
   test('parks the task in on_hold with the note, drops the lease, resets attempts', () => {
     const id = addTask(db, { title: 'x' });

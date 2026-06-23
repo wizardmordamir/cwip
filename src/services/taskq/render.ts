@@ -31,6 +31,9 @@ function markers(task: TaskRow, needs: string[]): string {
   if (task.model) parts.push(`model:${task.model}`);
   if (task.think) parts.push(`think:${task.think}`);
   if (task.fast) parts.push('fast');
+  // No-op-OK audit/check tasks: surface the exemption so the board shows why a task
+  // can legitimately land no git delta (the false-done gate won't demand one).
+  if (task.noop_ok) parts.push('noop-ok');
   // Retry accounting: surface the attempt count (and per-task ceiling, if set) so
   // the zero-token mirror shows "this failed N times" rather than looking pristine.
   if (task.attempts > 0) {

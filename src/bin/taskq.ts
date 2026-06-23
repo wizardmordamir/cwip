@@ -62,7 +62,9 @@ Run (orchestrator/worker):
   taskq init                              create/migrate the DB
 
 Author opts: --body --slug --repo --model --think --group --recur N --max-attempts N --needs a,b --note --status
-             --fast   --pos top|bottom|before:<id>|after:<id>
+             --fast   --noop-ok   --pos top|bottom|before:<id>|after:<id>
+  (--noop-ok marks an audit/check/review task that may legitimately land no code — the
+   false-done gate then accepts a no-op completion; --noop-ok false clears it.)
 `;
 
 type Flags = Record<string, string | boolean>;
@@ -114,6 +116,9 @@ function draftFromFlags(f: Flags): NewTask & TaskPatch {
   if (f.note !== undefined) d.note = str(f, 'note');
   if (f.status !== undefined) d.status = str(f, 'status') as NewTask['status'];
   if (f.fast !== undefined) d.fast = true;
+  // `--noop-ok` marks an audit/check/review task that may land no git delta;
+  // `--noop-ok false` clears it (so an `update` can toggle it back off).
+  if (f['noop-ok'] !== undefined) d.noop_ok = f['noop-ok'] !== 'false';
   if (f.needs !== undefined) {
     d.needs = (str(f, 'needs') ?? '')
       .split(',')

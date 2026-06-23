@@ -245,6 +245,17 @@ const MIGRATIONS: Migration[] = [
       db.exec(`ALTER TABLE tasks ADD COLUMN max_attempts INTEGER`);
     },
   },
+  {
+    // No-op-OK tasks: a diagnostic/audit/check/review (or any "only change if
+    // needed") task may legitimately complete with NO git delta. The false-done
+    // gate must NOT demand a non-empty delta for these — it still verifies no
+    // regression, but trusts the worker's judgment that nothing needed changing.
+    // Default 0 keeps the delta requirement on for ordinary code-change tasks.
+    version: 11,
+    up: (db) => {
+      db.exec(`ALTER TABLE tasks ADD COLUMN noop_ok INTEGER NOT NULL DEFAULT 0`);
+    },
+  },
 ];
 
 /** The latest schema version (the version the engine expects). */

@@ -75,8 +75,8 @@ export function addTask(db: TaskqDb, draft: NewTask, position: Position = { at: 
     if (draft.slug) assertSlugFree(db, draft.slug, null);
     const ord = ordFor(db, position);
     const res = db.run(
-      `INSERT INTO tasks (ord, status, slug, title, body, repo, model, think, fast, group_key, serial_group, recur_n, recur_interval_ms, is_template, is_saved, max_attempts, parent_id, note)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tasks (ord, status, slug, title, body, repo, model, think, fast, group_key, serial_group, recur_n, recur_interval_ms, is_template, is_saved, max_attempts, noop_ok, parent_id, note)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ord,
       draft.status ?? 'ready',
       draft.slug ?? null,
@@ -93,6 +93,7 @@ export function addTask(db: TaskqDb, draft: NewTask, position: Position = { at: 
       draft.is_template ? 1 : 0,
       draft.is_saved ? 1 : 0,
       draft.max_attempts ?? null,
+      draft.noop_ok ? 1 : 0,
       draft.parent_id ?? null,
       draft.note ?? null,
     );
@@ -143,6 +144,7 @@ export function updateTask(db: TaskqDb, id: number, patch: TaskPatch): void {
     if (patch.is_template !== undefined) set('is_template', patch.is_template ? 1 : 0);
     if (patch.is_saved !== undefined) set('is_saved', patch.is_saved ? 1 : 0);
     if (patch.max_attempts !== undefined) set('max_attempts', patch.max_attempts ?? null);
+    if (patch.noop_ok !== undefined) set('noop_ok', patch.noop_ok ? 1 : 0);
     if (patch.parent_id !== undefined) set('parent_id', patch.parent_id ?? null);
     if (patch.note !== undefined) set('note', patch.note ?? null);
 
