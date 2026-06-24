@@ -7,8 +7,8 @@ toolkit. ESM-only and tree-shakeable (`"sideEffects": false`), so importing one 
 ships only that function's code.
 
 > Working on (or with an agent in) this package? [AGENTS.md](./AGENTS.md) is the dense,
-> LLM-oriented map of every export — it ships in the package, so `node_modules/cwip/AGENTS.md`
-> is readable after install.
+> LLM-oriented map of every export — contributor/dev guidance that lives in the repo but
+> does not ship in the npm tarball (only `dist/` is published).
 
 ## Installation
 
