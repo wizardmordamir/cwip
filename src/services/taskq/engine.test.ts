@@ -285,14 +285,17 @@ describe('lifecycle: complete / fail / release / reap', () => {
   });
 
   test('fail auto-retries (back to ready + reason) by default; release returns to ready', () => {
-    const id = addTask(db, { title: 'x' });
+    const id = addTask(db, { title: 'x', note: 'owner note: do the thing carefully' });
     claim(db, id, { workerId: 'w', nowMs: T0 });
     // A single transient failure is RE-QUEUED, not terminal — attempts < default max.
     const outcome = failTask(db, id, 'needs live creds', T0);
     expect(outcome.terminal).toBe(false);
     expect(outcome.status).toBe('ready');
     expect(getTask(db, id)?.status).toBe('ready');
-    expect(getTask(db, id)?.note).toBe('needs live creds');
+    // The failure reason lands in last_error — and the owner's note is PRESERVED,
+    // not clobbered by the engine-written reason (the data-loss bug this fixes).
+    expect(getTask(db, id)?.last_error).toBe('needs live creds');
+    expect(getTask(db, id)?.note).toBe('owner note: do the thing carefully');
     expect(getTask(db, id)?.attempts).toBe(1);
 
     const id2 = addTask(db, { title: 'y' });
@@ -313,6 +316,8 @@ describe('lifecycle: complete / fail / release / reap', () => {
     // A reaped task is re-queued like any transient failure: ready + attempts incremented.
     expect(getTask(db, stranded)?.status).toBe('ready');
     expect(getTask(db, stranded)?.attempts).toBe(1);
+    // The reap reason is recorded on last_error (the lease-reap shares applyFailure).
+    expect(getTask(db, stranded)?.last_error).toMatch(/lease expired/);
     expect(getTask(db, alive)?.status).toBe('claimed');
     expect(getTask(db, alive)?.attempts).toBe(0);
   });
@@ -618,7 +623,7 @@ describe('hold disposition: who unblocks a parked task + when', () => {
   });
 
   test('exhausted retries → failed + needs_owner (no auto-resolver remains)', () => {
-    const id = addTask(db, { title: 'always', max_attempts: 1 });
+    const id = addTask(db, { title: 'always', max_attempts: 1, note: 'owner note kept' });
     claim(db, id, { workerId: 'w', nowMs: T0 });
     const out = failTask(db, id, 'boom', T0);
     expect(out.terminal).toBe(true);
@@ -626,6 +631,9 @@ describe('hold disposition: who unblocks a parked task + when', () => {
     expect(t.status).toBe('failed');
     expect(t.hold_disposition).toBe('needs_owner');
     expect(t.resolver_ref).toBeNull();
+    // Terminal-fail path also writes last_error, not note — owner note survives.
+    expect(t.last_error).toBe('boom');
+    expect(t.note).toBe('owner note kept');
   });
 
   test('failHard / permanent → failed + needs_owner', () => {
@@ -633,6 +641,7 @@ describe('hold disposition: who unblocks a parked task + when', () => {
     claim(db, id, { workerId: 'w', nowMs: T0 });
     failHard(db, id, 'needs a human', T0);
     expect(getTask(db, id)?.hold_disposition).toBe('needs_owner');
+    expect(getTask(db, id)?.last_error).toBe('needs a human');
   });
 
   test('saved (no interval) completion parks on_hold + needs_owner; one-shot done clears', () => {

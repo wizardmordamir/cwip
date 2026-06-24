@@ -237,8 +237,10 @@ const MIGRATIONS: Migration[] = [
     //   attempts     — failures so far (incremented on explicit failure AND lease-reap).
     //   max_attempts — per-task override of the config default (null = use default).
     // The backoff "not eligible until" timestamp reuses the existing recur_next_at
-    // column (the claim query honors it across all eligibility branches) and the
-    // failure reason reuses `note` — so no new scheduling/eligibility plumbing.
+    // column (the claim query honors it across all eligibility branches). NOTE: the
+    // failure reason originally reused `note`, but that clobbered the owner's task
+    // note (data loss) — v14 adds a dedicated `last_error` column the engine writes
+    // instead; `note` is now owner-only. (No scheduling/eligibility plumbing either way.)
     version: 10,
     up: (db) => {
       db.exec(`ALTER TABLE tasks ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0`);
@@ -334,6 +336,18 @@ const MIGRATIONS: Migration[] = [
       db.exec(`CREATE INDEX idx_findings_status ON findings(status);`);
       db.exec(`CREATE INDEX idx_findings_type ON findings(type);`);
       db.exec(`CREATE INDEX idx_findings_fix_task ON findings(fix_task);`);
+    },
+  },
+  {
+    // Dedicated failure-reason column (data-loss fix). The auto-retry machinery
+    // (v10) parked the failure reason in `note`, but `note` is the OWNER's task
+    // note — an engine-written failure string overwrote it on every failure/reap,
+    // silently destroying authored context. `last_error` separates the two: the
+    // engine writes the most-recent failure reason here (see applyFailure), `note`
+    // stays owner-only. Nullable, additive: existing rows get NULL (no prior error).
+    version: 14,
+    up: (db) => {
+      db.exec(`ALTER TABLE tasks ADD COLUMN last_error TEXT`);
     },
   },
 ];

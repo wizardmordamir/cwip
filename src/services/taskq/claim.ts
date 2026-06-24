@@ -380,9 +380,11 @@ export interface FailOutcome {
  * effective ceiling and the failure isn't `permanent`, return the task to
  * `ready` with a backoff (`recur_next_at = now + backoff`) so a transient hiccup
  * gets time to clear before the automatic retry. Once exhausted (or permanent),
- * park terminal `failed`. The lease is always dropped and `note` records the
- * reason. Shared by {@link failTask} and {@link reapExpired} so a lease-reap is
- * accounted exactly like an explicit failure.
+ * park terminal `failed`. The lease is always dropped and `last_error` records
+ * the failure reason — NOT `note`, which holds the owner's task note and must
+ * never be clobbered by an engine-written failure string (the data-loss bug this
+ * column fixes). Shared by {@link failTask} and {@link reapExpired} so a
+ * lease-reap is accounted exactly like an explicit failure.
  */
 function applyFailure(db: TaskqDb, taskId: number, reason: string, nowMs: number, opts: FailOpts): FailOutcome {
   const task = getTask(db, taskId);
@@ -403,7 +405,7 @@ function applyFailure(db: TaskqDb, taskId: number, reason: string, nowMs: number
     // while the owner sees "auto-retrying, no action needed" rather than a bare
     // ready row. `claim` clears it the moment the task actually runs again.
     db.run(
-      `UPDATE tasks SET status = 'ready', hold_disposition = 'awaiting_retry', resolver_ref = NULL, attempts = ?, recur_next_at = ?, note = ?, updated_at = ${NOW} WHERE id = ?`,
+      `UPDATE tasks SET status = 'ready', hold_disposition = 'awaiting_retry', resolver_ref = NULL, attempts = ?, recur_next_at = ?, last_error = ?, updated_at = ${NOW} WHERE id = ?`,
       attempts,
       retryAt,
       reason,
@@ -416,7 +418,7 @@ function applyFailure(db: TaskqDb, taskId: number, reason: string, nowMs: number
   // — the attempt budget is spent — so the disposition is needs_owner (a human must
   // decide: re-queue, change the task, or file a heal). Never a silent strand.
   db.run(
-    `UPDATE tasks SET status = 'failed', hold_disposition = 'needs_owner', resolver_ref = NULL, attempts = ?, note = ?, updated_at = ${NOW} WHERE id = ?`,
+    `UPDATE tasks SET status = 'failed', hold_disposition = 'needs_owner', resolver_ref = NULL, attempts = ?, last_error = ?, updated_at = ${NOW} WHERE id = ?`,
     attempts,
     reason,
     taskId,

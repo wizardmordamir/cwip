@@ -79,7 +79,11 @@ export function renderTasksMarkdown(tasks: TaskRow[], needsByTask: Record<number
     lines.push(`## ${status} (${group.length})`, '');
     for (const t of group) {
       const note = t.note ? ` — ${t.note.replace(/\s+/g, ' ').trim()}` : '';
-      lines.push(`- #${t.id}${markers(t, needsByTask[t.id] ?? [])} ${t.title}${note}`);
+      // The owner's note and the engine's last failure reason are SEPARATE fields
+      // (last_error never clobbers note) — surface both so a failed/retrying task
+      // still shows WHY, without losing any authored note.
+      const lastError = t.last_error ? ` ⚠ ${t.last_error.replace(/\s+/g, ' ').trim()}` : '';
+      lines.push(`- #${t.id}${markers(t, needsByTask[t.id] ?? [])} ${t.title}${note}${lastError}`);
       if (t.body) for (const bl of t.body.split('\n')) lines.push(`  ${bl}`);
     }
     lines.push('');

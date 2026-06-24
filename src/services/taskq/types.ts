@@ -204,8 +204,19 @@ export interface TaskRow {
    */
   noop_ok: number;
   parent_id: number | null;
-  /** Why it's on_hold / blocked / needs_input / failed (the human reason). */
+  /**
+   * The OWNER's task note (manual hold reason, authoring context). Engine-written
+   * failure reasons go to {@link last_error}, NOT here — the engine never clobbers
+   * this field.
+   */
   note: string | null;
+  /**
+   * The most-recent engine-written failure reason (set by every failure/lease-reap
+   * via applyFailure). Distinct from {@link note} so an auto-retry/terminal-fail
+   * never overwrites the owner's note. null ⇒ never failed. Persists across a later
+   * successful retry as a historical record of the last error.
+   */
+  last_error: string | null;
   /**
    * For a PARKED task: WHO/WHAT unblocks it (a {@link HoldDisposition}). Set by
    * every park path, cleared on un-park. null ⇒ not parked (or a legacy row not
