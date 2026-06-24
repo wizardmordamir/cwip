@@ -42,6 +42,7 @@ export interface TaskqDb {
  *   not_ready      — blocked on something external
  *   failed         — AI-blocked mid-run (+ reason note)
  *   done           — complete (history in `completions`)
+ *   archived       — frozen/parked out of the flow; never claimed, fully preserved + recoverable
  */
 export const TASK_STATUSES = [
   'draft',
@@ -54,6 +55,7 @@ export const TASK_STATUSES = [
   'not_ready',
   'failed',
   'done',
+  'archived',
 ] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
