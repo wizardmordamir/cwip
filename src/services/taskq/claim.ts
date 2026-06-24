@@ -144,6 +144,13 @@ function autoTierIfNeeded(db: TaskqDb, taskId: number, opts: ClaimOpts): void {
 }
 
 /** Claim every other `ready` member of `task`'s `(group:G)` for the same worker. */
+// WARNING — lease count ≠ active worker count (Lesson 17).
+// This inserts leases for ALL group members under the same worker_id, but the slot
+// works through them SEQUENTIALLY — only one task at a time has an active worker.
+// Group-member leases start with heartbeat_at == claimed_at (insertLease stamps now()
+// for both). A UI that shows all N leases as "In Progress" is WRONG: use the heartbeat
+// gap (heartbeat_at > claimed_at + grace) to distinguish an actively-worked task from a
+// group-queued one waiting its turn. Never surface a raw lease count as "workers running."
 function claimGroupMembers(db: TaskqDb, task: TaskRow, opts: ClaimOpts): void {
   if (!task.group_key) return;
   const members = db
