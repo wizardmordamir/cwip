@@ -34,6 +34,11 @@ export function getTask(db: TaskqDb, id: number): TaskRow | null {
   return (db.query(`SELECT * FROM tasks WHERE id = ?`).get(id) as TaskRow | undefined | null) ?? null;
 }
 
+/** Fetch one task row by its (UNIQUE) slug, or null. */
+export function getTaskBySlug(db: TaskqDb, slug: string): TaskRow | null {
+  return (db.query(`SELECT * FROM tasks WHERE slug = ?`).get(slug) as TaskRow | undefined | null) ?? null;
+}
+
 /** The `needs:` slugs a task waits on. */
 export function getNeeds(db: TaskqDb, id: number): string[] {
   return (db.query(`SELECT needs_slug FROM task_deps WHERE task_id = ?`).all(id) as { needs_slug: string }[]).map(

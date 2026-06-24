@@ -10,6 +10,7 @@
 
 export * from './autoTier';
 export * from './backoff';
+export * from './captureError';
 export * from './ccusage';
 export * from './claim';
 export * from './clarifications';
