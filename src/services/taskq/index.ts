@@ -22,6 +22,7 @@ export * from './findings';
 export * from './paths';
 export * from './recurrence';
 export * from './render';
+export * from './resources';
 export * from './schedule';
 export * from './schema';
 export * from './tasks';
