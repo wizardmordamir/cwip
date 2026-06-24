@@ -98,13 +98,17 @@ Findings (continuous-improvement ledger — idempotent: fixed/accepted never re-
   taskq findings wontfix <id> [--note T]  a conscious deferral — never re-flag
   taskq findings reopen <id>              back to open (a regression resurfaced)
 
-Author opts: --body --slug --repo --model --think --group --recur N --max-attempts N --needs a,b --note --status
+Author opts: --body --slug --repo --model --think --group --recur N --recur-interval-ms MS --is-saved [false]
+             --max-attempts N --needs a,b --note --status
              --fast   --noop-ok   --pos top|bottom|before:<id>|after:<id>
   (--noop-ok marks an audit/check/review task that may legitimately land no code — the
    false-done gate then accepts a no-op completion; --noop-ok false clears it.)
   (--model auto, or no --model, leaves the tier UNSET → the worker auto-tiers it the
    moment it's eligible, then writes back an explicit model+think. Re-set to auto to
    force a re-assessment; an explicit alias is always respected.)
+  (--recur-interval-ms MS sets time-based recurrence in milliseconds, e.g. 604800000 for weekly.
+   --is-saved keeps the task in on_hold after completion for manual re-queuing or auto-scheduling;
+   --is-saved false clears it. Pair --is-saved with --recur-interval-ms for automatic weekly runs.)
 `;
 
 type Flags = Record<string, string | boolean>;
@@ -152,6 +156,8 @@ function draftFromFlags(f: Flags): NewTask & TaskPatch {
   if (f.think !== undefined) d.think = str(f, 'think');
   if (f.group !== undefined) d.group_key = str(f, 'group');
   if (f.recur !== undefined) d.recur_n = num(f, 'recur');
+  if (f['recur-interval-ms'] !== undefined) d.recur_interval_ms = num(f, 'recur-interval-ms') ?? null;
+  if (f['is-saved'] !== undefined) d.is_saved = f['is-saved'] !== 'false';
   if (f['max-attempts'] !== undefined) d.max_attempts = num(f, 'max-attempts');
   if (f.note !== undefined) d.note = str(f, 'note');
   if (f.status !== undefined) d.status = str(f, 'status') as NewTask['status'];
