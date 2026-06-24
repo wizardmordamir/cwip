@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { applyTier, autoTierTask, classifyTier, type TierVerdict, tierVerdictFor } from './autoTier';
-import { autoTierEligible } from './claim';
+import { autoTierEligible, autoTierEligibleAsync } from './claim';
 import { migrate } from './schema';
 import { addTask, getTask, setStatus, updateTask } from './tasks';
 import { AUTO_MODEL, needsTiering, type TaskqDb } from './types';
@@ -169,5 +169,77 @@ describe('autoTierEligible — drainer sweep', () => {
     setStatus(db, 1, 'done'); // satisfy the dep
     expect(autoTierEligible(db, T0)).toBe(1);
     expect(getTask(db, blocked)?.model).toBe('opus'); // security → opus
+  });
+});
+
+describe('autoTierEligibleAsync — LLM pre-sweep', () => {
+  const sonnetVerdict: TierVerdict = { model: 'sonnet', think: 'medium', confidence: 'heuristic', reason: 'LLM' };
+  const opusVerdict: TierVerdict = { model: 'opus', think: 'high', confidence: 'heuristic', reason: 'LLM' };
+
+  test('classifier is only called for ambiguous tasks; heuristic tasks bypass it', async () => {
+    addTask(db, { title: 'update docs' }, { at: 'bottom' }); // light → sonnet, no LLM
+    addTask(db, { title: 'secure the api schema' }, { at: 'bottom' }); // heavy → opus, no LLM
+    addTask(db, { title: 'do the widget thing' }, { at: 'bottom' }); // ambiguous → LLM called
+
+    const calls: string[] = [];
+    const classify = async (title: string): Promise<TierVerdict | null> => {
+      calls.push(title);
+      return sonnetVerdict;
+    };
+
+    const tiered = await autoTierEligibleAsync(db, T0, { classify });
+    expect(tiered).toBe(3);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toBe('do the widget thing');
+    expect(getTask(db, 1)?.model).toBe('sonnet'); // light signal
+    expect(getTask(db, 2)?.model).toBe('opus'); // heavy signal
+    expect(getTask(db, 3)?.model).toBe('sonnet'); // LLM verdict
+  });
+
+  test('classifier returning null falls back to the conservative heuristic default', async () => {
+    addTask(db, { title: 'do the widget thing' }, { at: 'bottom' }); // ambiguous
+
+    const tiered = await autoTierEligibleAsync(db, T0, { classify: async () => null });
+    expect(tiered).toBe(1);
+    // Heuristic default: opus/high
+    expect(getTask(db, 1)?.model).toBe('opus');
+    expect(getTask(db, 1)?.think).toBe('high');
+  });
+
+  test('classifier can downgrade an ambiguous task to sonnet', async () => {
+    addTask(db, { title: 'do the widget thing' }, { at: 'bottom' });
+
+    await autoTierEligibleAsync(db, T0, { classify: async () => sonnetVerdict });
+    expect(getTask(db, 1)?.model).toBe('sonnet');
+    expect(getTask(db, 1)?.think).toBe('medium');
+  });
+
+  test('classifier can confirm opus for an ambiguous task', async () => {
+    addTask(db, { title: 'do the widget thing' }, { at: 'bottom' });
+
+    await autoTierEligibleAsync(db, T0, { classify: async () => opusVerdict });
+    expect(getTask(db, 1)?.model).toBe('opus');
+    expect(getTask(db, 1)?.think).toBe('high');
+  });
+
+  test('skips explicit tasks and templates', async () => {
+    addTask(db, { title: 'explicit', model: 'sonnet' }, { at: 'bottom' }); // explicit → skipped
+    addTask(db, { title: 'tmpl', is_template: true }, { at: 'bottom' }); // template → skipped
+    addTask(db, { title: 'ambiguous task' }, { at: 'bottom' }); // ambiguous → classified
+
+    const tiered = await autoTierEligibleAsync(db, T0, { classify: async () => opusVerdict });
+    expect(tiered).toBe(1);
+    expect(getTask(db, 1)?.model).toBe('sonnet'); // untouched
+    expect(getTask(db, 2)?.model).toBe(AUTO_MODEL); // template untouched
+    expect(getTask(db, 3)?.model).toBe('opus'); // classified
+  });
+
+  test('idempotent: a second sweep finds nothing to tier', async () => {
+    addTask(db, { title: 'ambiguous task' }, { at: 'bottom' });
+
+    await autoTierEligibleAsync(db, T0, { classify: async () => sonnetVerdict });
+    const second = await autoTierEligibleAsync(db, T0, { classify: async () => opusVerdict });
+    expect(second).toBe(0); // already explicit — skipped
+    expect(getTask(db, 1)?.model).toBe('sonnet'); // first verdict preserved
   });
 });

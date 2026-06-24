@@ -1,4 +1,4 @@
-import { applyTier, type TierClassifier, tierVerdictFor } from './autoTier';
+import { type AsyncTierClassifier, applyTier, classifyTier, type TierClassifier, tierVerdictFor } from './autoTier';
 import { type BackoffOpts, backoffMs } from './backoff';
 import { resolveFindingsForTask } from './findings';
 import { nextRecurAt } from './recurrence';
@@ -275,6 +275,51 @@ export function autoTierEligible(
     }
     return tiered;
   });
+}
+
+/**
+ * Async variant of {@link autoTierEligible}: like the sync version but accepts an
+ * {@link AsyncTierClassifier} to refine ambiguous cases with a model call. The
+ * classifier is invoked ONLY for tasks where the heuristic returns `ambiguous`
+ * confidence — deterministic (heavy/light) tasks are never sent to the model.
+ * Because the LLM call must happen outside any SQLite transaction, each verdict is
+ * applied in its own mini-transaction; the sweep is idempotent (explicit tasks are
+ * skipped by re-reading inside each write) but NOT executed in one atomic batch.
+ */
+export async function autoTierEligibleAsync(
+  db: TaskqDb,
+  nowMs: number,
+  opts: { repo?: string; classify: AsyncTierClassifier },
+): Promise<number> {
+  const { sql, params } = eligibilityClause(opts.repo ? { repo: opts.repo } : undefined);
+  const notBefore = `(t.recur_next_at IS NULL OR t.recur_next_at <= ?)`;
+  const rows = db
+    .query(
+      `SELECT t.id FROM tasks t
+        WHERE t.status = 'ready' AND t.is_template = 0
+          AND (t.model IS NULL OR t.model = '${AUTO_MODEL}')
+          AND ${notBefore}${sql}
+        ORDER BY t.ord ASC, t.id ASC`,
+    )
+    .all(nowMs, ...params) as { id: number }[];
+
+  let tiered = 0;
+  for (const { id } of rows) {
+    const task = getTask(db, id);
+    if (!task || !needsTiering(task.model)) continue;
+    const heuristic = classifyTier(task);
+    // Only call the model for tasks where the heuristic found no signal.
+    const verdict =
+      heuristic.confidence === 'ambiguous' ? ((await opts.classify(task.title, task.body)) ?? heuristic) : heuristic;
+    // Re-check inside a mini-transaction so a race (concurrent claim) is a no-op.
+    withTx(db, () => {
+      const current = getTask(db, id);
+      if (!current || !needsTiering(current.model)) return;
+      applyTier(db, id, verdict);
+      tiered++;
+    });
+  }
+  return tiered;
 }
 
 /** Extend a lease (worker still alive). Returns false if the lease is gone. */

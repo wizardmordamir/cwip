@@ -47,6 +47,15 @@ export interface TierVerdict {
 export type TierClassifier = (input: TierInput) => TierVerdict | null;
 
 /**
+ * An async variant of {@link TierClassifier} for the model-backed LLM pre-sweep.
+ * Called ONLY for tasks where the pure heuristic returned `ambiguous` confidence
+ * (no keyword signal either way) — deterministic tasks are never sent to the model.
+ * Return a verdict to override the conservative default, or null to accept it.
+ * cwip stays runtime-free: the actual LLM call lives in the consumer (rubato's drainer).
+ */
+export type AsyncTierClassifier = (title: string, body: string | null) => Promise<TierVerdict | null>;
+
+/**
  * HEAVY signals → opus/max. Genuinely hard work where under-powering risks a wrong
  * or shallow result: schema/API/architecture/security/engine/from-scratch/
  * cross-cutting and close kin. Checked FIRST (heavy wins over light) because a
