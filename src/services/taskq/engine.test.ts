@@ -322,6 +322,47 @@ describe('lifecycle: complete / fail / release / reap', () => {
     expect(getTask(db, alive)?.attempts).toBe(0);
   });
 
+  test('reapExpired drops an orphaned lease instead of crash-looping (FK-off / deleted-task case)', () => {
+    // Prod runs foreign_keys OFF, so deleting a task does NOT cascade its lease away —
+    // the orphan that the old reapExpired threw "task not found" on, rolling back the
+    // whole reap forever (a 40-min stall). Reproduce: detach FK, delete under the lease.
+    const ghost = addTask(db, { title: 'ghost' });
+    claim(db, ghost, { workerId: 'w', nowMs: T0, ttlMs: 1000 });
+    db.exec('PRAGMA foreign_keys = OFF');
+    db.run('DELETE FROM tasks WHERE id = ?', ghost);
+    db.exec('PRAGMA foreign_keys = ON');
+    expect((db.query('SELECT COUNT(*) AS c FROM leases WHERE task_id = ?').get(ghost) as { c: number }).c).toBe(1);
+    // Must not throw, and must clean the orphan so the next drain tick is healthy.
+    expect(() => reapExpired(db, T0 + 2000)).not.toThrow();
+    expect((db.query('SELECT COUNT(*) AS c FROM leases WHERE task_id = ?').get(ghost) as { c: number }).c).toBe(0);
+  });
+
+  test('reapExpired reclaims a dead-mid-run worker before the TTL (heartbeat advanced, then silent)', () => {
+    const id = addTask(db, { title: 'mid-run death' });
+    claim(db, id, { workerId: 'w', nowMs: T0, ttlMs: 60 * 60_000 }); // long TTL: not the backstop
+    heartbeat(db, id, T0 + 90_000, 60 * 60_000); // actively worked (beat past claim), then drain died
+    expect(reapExpired(db, T0 + 90_000 + 6 * 60_000)).toBe(1); // 6 min silent > DEAD_WORKER_MS (5)
+    expect(getTask(db, id)?.status).toBe('ready');
+    expect(getTask(db, id)?.attempts).toBe(1);
+  });
+
+  test('reapExpired reclaims a never-started ghost after the startup grace; protects it before', () => {
+    const id = addTask(db, { title: 'never started' });
+    claim(db, id, { workerId: 'w', nowMs: T0, ttlMs: 60 * 60_000 }); // heartbeat == claimed_at
+    expect(reapExpired(db, T0 + 4 * 60_000)).toBe(0); // under the 5-min startup grace
+    expect(getTask(db, id)?.status).toBe('claimed');
+    expect(reapExpired(db, T0 + 6 * 60_000)).toBe(1); // past it → never heartbeated = never ran
+    expect(getTask(db, id)?.status).toBe('ready');
+  });
+
+  test('reapExpired does NOT early-reap a group-queued member (parked at heartbeat==claimed_at)', () => {
+    const member = addTask(db, { title: 'member' });
+    claim(db, member, { workerId: 'w', nowMs: T0, ttlMs: 60 * 60_000 }); // heartbeat == claimed_at
+    db.run("UPDATE tasks SET group_key = 'G' WHERE id = ?", member); // parked group member
+    expect(reapExpired(db, T0 + 10 * 60_000)).toBe(0); // guarded out of the never-started branch
+    expect(getTask(db, member)?.status).toBe('claimed');
+  });
+
   test('default lease TTL is exported and positive', () => {
     expect(DEFAULT_LEASE_TTL_MS).toBeGreaterThan(0);
   });

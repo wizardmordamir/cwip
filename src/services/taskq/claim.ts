@@ -12,6 +12,20 @@ export const DEFAULT_LEASE_TTL_MS = 15 * 60_000;
 /** Default retry ceiling when neither the task nor the caller specifies one. */
 export const DEFAULT_MAX_ATTEMPTS = 3;
 
+// Fast dead-worker reaping — reclaim a lease the moment the worker is *provably*
+// gone, instead of waiting out the full lease TTL. A live worker's drain stamps a
+// heartbeat every ~60s, so these thresholds (5 intervals) only ever trip on a
+// genuinely dead worker, never a slow-but-alive one.
+/** A heartbeat must exceed claimed_at by this to count as "actively worked"
+ *  (a group-queued member sits at exactly claimed_at until its turn). */
+const ACTIVE_GRACE_MS = 60_000;
+/** A lease that WAS heartbeating but has gone silent this long → its drain (and so
+ *  its child worker) is dead; reap without waiting the TTL. */
+const DEAD_WORKER_MS = 5 * 60_000;
+/** A NON-group lease still at heartbeat≈claimed_at this long after claim never
+ *  actually started (the drain heartbeats the instant it begins a task) → reap. */
+const STARTUP_GRACE_MS = 5 * 60_000;
+
 export interface ClaimOpts {
   workerId: string;
   worktree?: string | null;
@@ -556,10 +570,36 @@ export function releaseLease(db: TaskqDb, taskId: number): void {
  */
 export function reapExpired(db: TaskqDb, nowMs: number, opts: FailOpts = {}): number {
   return withTx(db, () => {
-    const expired = db.query(`SELECT task_id FROM leases WHERE expires_at <= ?`).all(nowMs) as { task_id: number }[];
-    for (const { task_id } of expired) {
-      applyFailure(db, task_id, 'lease expired (worker crashed or stopped heartbeating)', nowMs, opts);
+    // Orphaned leases — the task was deleted out from under the lease. Routing one
+    // through applyFailure throws "task <id> not found", which rolls back this whole
+    // reap so the lease is never cleared → it re-throws on every drain tick, a crash
+    // loop that strands the ENTIRE queue (a real 40-min outage). They point at
+    // nothing reapable; just drop them before the retry-accounting pass.
+    db.run(`DELETE FROM leases WHERE task_id NOT IN (SELECT id FROM tasks)`);
+
+    // Reclaim, through the normal retry accounting, every lease whose worker is gone:
+    //   1. expires_at <= now  — the lease-TTL backstop (always).
+    //   2. dead mid-run       — it heartbeat past claim (so it was actively worked, NOT
+    //      a parked group member) then went silent > DEAD_WORKER_MS: the owning drain
+    //      died, so its child worker is dead too — no need to wait out the full TTL.
+    //   3. never started      — a NON-group lease still at heartbeat≈claimed_at
+    //      STARTUP_GRACE after claim: the drain stamps a heartbeat the instant it begins
+    //      a task, so one that never advanced never ran (e.g. the drain was killed
+    //      between claim and spawn — the "ghost lease" failure). Group members park at
+    //      heartbeat==claimed_at by design, so the group_key guard leaves them alone.
+    const deadBefore = nowMs - DEAD_WORKER_MS;
+    const startupBefore = nowMs - STARTUP_GRACE_MS;
+    const rows = db
+      .query(
+        `SELECT l.task_id FROM leases l JOIN tasks t ON t.id = l.task_id
+          WHERE l.expires_at <= ?
+             OR (l.heartbeat_at > l.claimed_at + ? AND l.heartbeat_at <= ?)
+             OR (l.heartbeat_at <= l.claimed_at + ? AND t.group_key IS NULL AND l.claimed_at <= ?)`,
+      )
+      .all(nowMs, ACTIVE_GRACE_MS, deadBefore, ACTIVE_GRACE_MS, startupBefore) as { task_id: number }[];
+    for (const { task_id } of rows) {
+      applyFailure(db, task_id, 'lease expired (worker crashed, was killed, or never started)', nowMs, opts);
     }
-    return expired.length;
+    return rows.length;
   });
 }
