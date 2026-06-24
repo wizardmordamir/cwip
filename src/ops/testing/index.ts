@@ -4,6 +4,7 @@
 // existing `cwip/testing` imports keep resolving and tests get one entry point.
 export * from '../../services/db-mock';
 export * from '../test-report';
+export * from './bootSmoke';
 export * from './fixture';
 export * from './httpTestClient';
 export * from './installDbMocks';
