@@ -84,6 +84,11 @@
       "types": "./dist/core/layout/index.d.ts",
       "import": "./dist/core/layout/index.js"
     },
+    "./log-review": {
+      "source": "./src/ops/logReview/index.ts",
+      "types": "./dist/ops/logReview/index.d.ts",
+      "import": "./dist/ops/logReview/index.js"
+    },
     "./mongodb": {
       "source": "./src/services/mongodb/index.ts",
       "types": "./dist/services/mongodb/index.d.ts",
