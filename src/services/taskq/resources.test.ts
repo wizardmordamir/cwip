@@ -3,14 +3,16 @@ import {
   type ResourceReaders,
   resourcePressure,
   resourceThrottle,
+  type SystemResourceSample,
   sampleSystemResources,
   stepDownModel,
   stepDownThink,
-  type SystemResourceSample,
 } from './resources';
 
 /** A fully-injected reader set so the sampler is deterministic (no real machine state). */
-function readers(over: Partial<{ load1: number; cores: number; total: number; free: number; gpu: number | null }> = {}): ResourceReaders {
+function readers(
+  over: Partial<{ load1: number; cores: number; total: number; free: number; gpu: number | null }> = {},
+): ResourceReaders {
   const { load1 = 0, cores = 8, total = 16_000, free = 8_000, gpu = null } = over;
   return {
     loadavg: () => [load1, load1, load1],

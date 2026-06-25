@@ -127,10 +127,7 @@ export interface ResourceThrottleDecision {
  * The floor is 1, never 0: a busy machine should SLOW work, not stop it (unlike a fully
  * spent token budget, which legitimately pauses). Deterministic + side-effect-free.
  */
-export function resourceThrottle(
-  pressure: number,
-  config: ResourceThrottleConfig,
-): ResourceThrottleDecision {
+export function resourceThrottle(pressure: number, config: ResourceThrottleConfig): ResourceThrottleDecision {
   const maxJobs = Math.max(1, Math.floor(config.maxJobs));
   const p = clamp01(pressure);
   if (config.enabled === false) {
