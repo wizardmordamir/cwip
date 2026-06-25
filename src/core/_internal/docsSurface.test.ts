@@ -14,9 +14,16 @@ const ROOT = resolve(import.meta.dir, '..', '..', '..');
 
 /**
  * In a git worktree `.git` is a FILE containing `gitdir: /path/.git/worktrees/<name>`.
- * Walk up 3 dirs from that path to find the primary checkout root so
- * gitignored-but-local files (AGENTS.md, CHANGELOG.md) are readable from
- * either the primary or a worktree.
+ * Walk up 3 dirs from that path to find the primary checkout root so the
+ * GITIGNORED-but-local docs (AGENTS.md, CHANGELOG.md) — which exist only in the
+ * primary — are readable from either the primary or a worktree.
+ *
+ * NOTE: only gitignored docs are read from here. README.md is TRACKED and present
+ * in every checkout, so it's read from ROOT (the local checkout being verified) —
+ * otherwise a worktree that ADDS an export and documents it in its own README could
+ * never satisfy the guard (the primary's README only updates on promotion), a
+ * promotion deadlock that defeats the guard's whole "you can't add an export without
+ * surfacing it" purpose.
  */
 async function findDocsRoot(from: string): Promise<string> {
   const dotGit = resolve(from, '.git');
@@ -45,8 +52,8 @@ describe('docs surface (no entry-point drift)', () => {
   it('every package.json export subpath is documented in README and AGENTS', async () => {
     const pkg = JSON.parse(await readFile(resolve(ROOT, 'package.json'), 'utf8'));
     const [readme, agents] = await Promise.all([
-      readFile(resolve(DOCS_ROOT, 'README.md'), 'utf8'),
-      readFile(resolve(DOCS_ROOT, 'AGENTS.md'), 'utf8'),
+      readFile(resolve(ROOT, 'README.md'), 'utf8'), // tracked → read the local checkout's copy
+      readFile(resolve(DOCS_ROOT, 'AGENTS.md'), 'utf8'), // gitignored → only in the primary
     ]);
 
     const specifiers = Object.keys(pkg.exports).map(toSpecifier);
