@@ -2,6 +2,18 @@
   "name": "cwip",
   "version": "2.7.0",
   "description": "Helpful utility functions with no external dependencies",
+  "scripts": {
+    "apptest": "bun run scripts/appTest",
+    "build": "bun run clean && tsc -p tsconfig.build.json && bun run scripts/fixEsmExtensions.ts && bun run scripts/copyStaticAssets.ts",
+    "check": "bun x biome check ./src && bun run typecheck",
+    "fix": "bun x biome check --write --unsafe ./src",
+    "clean": "rm -rf dist",
+    "done": "bun run check && bun run test && bun run build",
+    "dryrunpublish": "bun publish --dry-run",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.spec.json --noEmit",
+    "test": "bun test --bail --preload ./src",
+    "prepublishOnly": "bun run done"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -187,18 +199,6 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "apptest": "bun run scripts/appTest",
-    "build": "bun run clean && tsc -p tsconfig.build.json && bun run scripts/fixEsmExtensions.ts && bun run scripts/copyStaticAssets.ts",
-    "check": "bun x biome check ./src && bun run typecheck",
-    "fix": "bun x biome check --write --unsafe ./src",
-    "clean": "rm -rf dist",
-    "done": "bun run check && bun run test && bun run build",
-    "dryrunpublish": "bun publish --dry-run",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.spec.json --noEmit",
-    "test": "bun test --bail --preload ./src",
-    "prepublishOnly": "bun run done"
-  },
   "license": "ISC",
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
@@ -213,8 +213,7 @@
     "hyperformula": "^3.3.0",
     "mongodb": "^7.3.0",
     "typescript": "^6.0.3",
-    "unpdf": "^1.6.2",
-    "xlsx": "^0.18.5"
+    "unpdf": "^1.6.2"
   },
   "peerDependencies": {
     "@playwright/test": ">=1.40",
@@ -227,7 +226,7 @@
     "mssql": ">=10",
     "mysql2": ">=3",
     "pg": ">=8",
-    "xlsx": ">=0.18"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "peerDependenciesMeta": {
     "@playwright/test": {

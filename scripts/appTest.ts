@@ -200,6 +200,7 @@ import {
   safeStringify,
   sanitizeString,
   setFunctionName,
+  safeParse,
   setPrecision,
   setValue,
   shallowClone,
@@ -234,7 +235,6 @@ import {
   toBase64,
   trim,
   truthy,
-  tryJsonParse,
   tryOr,
   tryOrAsync,
   unique,
@@ -281,7 +281,7 @@ import {
   readFileUnsafe,
   removePath,
   writeFile,
-} from '../dist/node';
+} from '../dist/web/node';
 
 import {
   fake,
@@ -343,6 +343,8 @@ logger.info('This is an info message');
 logger.warn('This is a warning message');
 logger.error('This is an error message');
 logger.info('Running app test');
+
+logger.info(`safeParse('x: x) -> ${safeParse('x: x')}`);
 
 isDir('.').then((res) => logger.info('isDirectory result:', res));
 
@@ -444,9 +446,9 @@ try {
   const run = (fn, val) => {
     fn(val);
   };
-  run(ifIt(truthy, loggit('msg3:')), env);
+  run(ifIt(truthy, loggit('msg3:'), logger.info), env);
   ['hello', 'world'].filter(objHasKey(env)).forEach(loggit('msg:'));
-  pipe((v) => {
+  pipe((v: any) => {
     logger.info(v);
     return v;
   }, loggit('msg1:'))('hi');
