@@ -12,7 +12,7 @@
  * deterministically. Only a genuinely AMBIGUOUS task (no signal either way) falls
  * back to the conservative default — and an app may then refine it with one cheap
  * model call by injecting a {@link TierClassifier}. cwip stays driver-agnostic and
- * runtime-free: the LLM call, if any, lives in the consumer (rubato's drainer),
+ * runtime-free: the LLM call, if any, lives in the consumer (app's drainer),
  * which computes a {@link TierVerdict} and passes it in.
  */
 
@@ -51,7 +51,7 @@ export type TierClassifier = (input: TierInput) => TierVerdict | null;
  * Called ONLY for tasks where the pure heuristic returned `ambiguous` confidence
  * (no keyword signal either way) — deterministic tasks are never sent to the model.
  * Return a verdict to override the conservative default, or null to accept it.
- * cwip stays runtime-free: the actual LLM call lives in the consumer (rubato's drainer).
+ * cwip stays runtime-free: the actual LLM call lives in the consumer (app's drainer).
  */
 export type AsyncTierClassifier = (title: string, body: string | null) => Promise<TierVerdict | null>;
 

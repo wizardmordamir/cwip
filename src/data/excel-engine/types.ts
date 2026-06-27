@@ -1,6 +1,6 @@
 // Shared types for the Excel Automations feature, used by both the server (the
 // authoritative step engine, built on exceljs + hyperformula) and the UI (the
-// rubato-style step builder). The discriminated `AutomationStep` union is the
+// step builder). The discriminated `AutomationStep` union is the
 // contract between the builder and the executors.
 
 // ---------------------------------------------------------------------------
@@ -235,7 +235,7 @@ export type AutomationStep =
   | ManualEditStep;
 
 // ---------------------------------------------------------------------------
-// Run results (mirrors rubato's StepResult shape)
+// Run results
 // ---------------------------------------------------------------------------
 
 export type StepStatus = 'ok' | 'error' | 'skipped';

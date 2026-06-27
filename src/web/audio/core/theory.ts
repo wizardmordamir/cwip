@@ -4,10 +4,7 @@
 // soundtracks consonant is unit-testable. The SYNTH owns frequencies; this is where pitch
 // classes become Hz (A4 = 440).
 //
-// Extracted from cursedalchemy's Lullabyte (`shared/lullabyte/theory.ts`) and Comet
-// (`comet/audio/musicTheory.ts`): `midiToFreq` and the degree→MIDI algorithm were identical
-// in both, and their interval tables were the same numbers under different enum keys. Each
-// consumer keeps its own enum-keyed table (composed from `MODE_INTERVALS` here) and any
+// Each consumer can keep its own enum-keyed table (composed from `MODE_INTERVALS` here) and any
 // consumer-specific voice-leading / snapping helpers, whose semantics legitimately differ.
 
 const A4_MIDI = 69;

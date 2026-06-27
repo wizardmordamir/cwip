@@ -104,7 +104,6 @@ describe('errors', () => {
     it('returns undefined and leaves the error unchanged when there is no stack', () => {
       const errMsg = 'test err message';
       const err = new Error(errMsg);
-      // biome-ignore lint/performance/noDelete: deliberately remove the stack to test the guard
       delete err.stack;
       expect(removeModulesFromStack(err)).toBe(undefined);
       expect(err.stack).toBe(undefined);

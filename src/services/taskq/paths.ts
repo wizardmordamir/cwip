@@ -3,7 +3,7 @@
  * to `~/.taskq/` so a fresh box re-creates the same path with no workspace.
  *   - `TASKQ_HOME` overrides the directory.
  *   - `TASKQ_DB` overrides the DB path directly (a plain path or a `file:` URI,
- *     so rubato can point at it via a connection string).
+ *     so an app can point at it via a connection string).
  */
 
 import { homedir } from 'node:os';

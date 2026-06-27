@@ -1,5 +1,5 @@
 /**
- * Pure validation for a task draft — the canonical, runtime-free gate (rubato's
+ * Pure validation for a task draft — the canonical, runtime-free gate (app's
  * UI and the `taskq` CLI both call it; nothing writes a malformed row). Returns
  * a list of human-readable problems; empty ⇒ valid.
  */

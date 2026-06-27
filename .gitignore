@@ -12,6 +12,7 @@ scripts/reports
 *tsbuildinfo
 ___*
 .claude/
-AGENTS.md
-CHANGELOG.md
 docs/
+*.md
+!README.md
+!AGENTS.md

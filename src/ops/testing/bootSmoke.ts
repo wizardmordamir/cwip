@@ -26,7 +26,7 @@ import { type StartTestServerOptions, startTestServer } from './startTestServer'
 
 /** How to boot one consumer for a smoke (the resolved, ready-to-spawn plan). */
 export interface SmokeSpec {
-  /** Repo alias (`ru`, `ca`, …) — labels the result. */
+  /** Repo alias (`app1`, `app2`, …) — labels the result. */
   repo: string;
   /** Command + args to spawn (e.g. `['bun', 'run', 'src/scripts/serve.ts']`). */
   cmd: string[];

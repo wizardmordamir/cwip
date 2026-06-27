@@ -3,8 +3,7 @@ import type { TabularAggregate, TabularCompare, TabularOp, TabularTable } from '
 
 /**
  * Apply an ordered list of `TabularOp`s to a table — the pure transform engine
- * behind spreadsheet/CSV automation features (promoted from rubato's excel
- * engine). No filesystem, no deps; file IO and xlsx parsing live in the
+ * behind spreadsheet/CSV automation features. No filesystem, no deps; file IO and xlsx parsing live in the
  * caller's adapter (`cwip/excel`, an app's server layer). Ops referencing
  * unknown columns are no-ops, not crashes — a pipeline shouldn't die because
  * an upstream sheet dropped a column.

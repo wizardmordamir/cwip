@@ -2,7 +2,7 @@ import type { SnResolvedCredentials } from './credentials';
 
 // Pure ServiceNow REST client. The URL/header/normalization helpers are
 // dependency-free (no DB, no HTTP framework) so they unit-test cleanly and work in
-// any app (cursedalchemy, rubato). Only `executeServiceNow` touches the network, via
+// any app. Only `executeServiceNow` touches the network, via
 // an injectable fetch.
 
 export type SnOperation = 'table_read' | 'table_write' | 'passthrough';

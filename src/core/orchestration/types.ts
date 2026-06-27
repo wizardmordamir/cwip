@@ -18,7 +18,7 @@ export type TimingEvent = {
   task_id: string;
   // Human task title.
   task_title: string;
-  // Canonical repo name (cursedalchemy | rubato | cwip | …).
+  // Canonical repo name (app1 | app2 | app3 | …).
   repo: string;
   // Category key (coerced to a known CategoryKey; unknown → 'other').
   category: CategoryKey;

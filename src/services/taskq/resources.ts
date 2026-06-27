@@ -19,7 +19,7 @@
  */
 
 import os from 'node:os';
-import { type ModelAlias, type ThinkLevel } from './types';
+import type { ModelAlias, ThinkLevel } from './types';
 
 /** One reading of the local machine's resource utilisation (each field 0–1). */
 export interface SystemResourceSample {

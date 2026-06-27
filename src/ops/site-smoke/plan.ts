@@ -25,7 +25,7 @@ export function planSiteSmoke(input: SiteSmokeSpecInput): SiteSmokeSpec {
 /**
  * Pure: the env one service runs under — its isolation knobs (home + port) plus any
  * extras. The home var relocates ALL of the app's state to a throwaway dir, so the
- * smoke never reads or writes the real `~/.rubato` / ca's data dir.
+ * smoke never reads or writes the real app data dirs.
  */
 export function siteServiceEnv(svc: SiteService): Record<string, string> {
   const env: Record<string, string> = { ...svc.extraEnv };

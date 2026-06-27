@@ -245,7 +245,7 @@ const RUBATO_APP_UI_TSCONFIG_JSON = `\
 
 // NOTE: rubato UI externals are broader than plain-cwip apps — cwip + rubato +
 // react-router-dom + @tanstack/react-query are all peer deps bundled by this app.
-// The @shared alias points at rubato's shipped src/shared (for type compatibility).
+// The @shared alias points at app's shipped src/shared (for type compatibility).
 const RUBATO_APP_UI_VITE_CONFIG_TS = `\
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -255,12 +255,12 @@ import { defineConfig } from 'vite';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-// The dedupe list below is load-bearing. rubato's embeddable UI externalises react,
+// The dedupe list below is load-bearing. app's embeddable UI externalises react,
 // react-dom, react-router-dom, @tanstack/react-query, and cwip — so this app bundles
 // them all. cwip is bun-linked and ships its OWN copies of React + react-query under
 // its node_modules; without forcing single instances Vite bundles a second React
 // (null hook dispatcher → white screen) and a second QueryClient (hooks can't see
-// the provider). The @shared alias matches rubato's own Vite alias so that types from
+// the provider). The @shared alias matches app's own Vite alias so that types from
 // rubato/ui/* resolve correctly.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -354,7 +354,7 @@ export function App() {
 
 const RUBATO_APP_UI_STYLES_CSS = `\
 @import 'tailwindcss';
-/* Generate Tailwind classes shipped by cwip/react and rubato's embeddable UI.
+/* Generate Tailwind classes shipped by cwip/react and app's embeddable UI.
    Tailwind v4 skips node_modules, so each package opts its dist in explicitly. */
 @import 'cwip/styles.css';
 @import 'rubato/styles.css';

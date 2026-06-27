@@ -1,7 +1,7 @@
 // Shared, driver-free query model. Pure data + types so the SAME structured spec
 // drives the UI builder, the copy/preview string, and server-side execution — for
 // SQL (postgres/mysql/mssql) and MongoDB alike. No node/bun imports: usable in the
-// browser, the server, and other apps (rubato).
+// browser, the server, and other apps.
 
 export type SqlDialect = 'postgres' | 'mysql' | 'mssql';
 export type QueryEngine = SqlDialect | 'mongodb';

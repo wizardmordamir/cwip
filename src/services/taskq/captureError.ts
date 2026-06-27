@@ -1,8 +1,8 @@
 /**
  * Capture a server 500 as a DEDUPED taskq "debug this" task.
  *
- * Both apps' error handlers funnel an uncaught 5xx in here (cursedalchemy's Hono
- * `app.onError`, rubato's central route error boundary). The same error signature
+ * Both apps' error handlers funnel an uncaught 5xx in here (apps can use Hono
+ * `app.onError`, a central route error boundary for example). The same error signature
  * updates ONE task — bump a count + last-seen, refresh the representative
  * stack/payload — instead of spawning a duplicate, so a recurring crash is a single
  * growing work item rather than queue spam. A genuinely new crash auto-files a
@@ -26,7 +26,7 @@ import { addTask, getTaskBySlug, updateTask } from './tasks';
 import type { TaskqDb } from './types';
 
 export interface ServerErrorCaptureInput {
-  /** App slug — namespaces the dedupe key + titles/routes the task (e.g. `ca`, `ru`). */
+  /** App slug — namespaces the dedupe key + titles/routes the task (e.g. `app1`, `app2`). */
   app: string;
   method: string;
   url: string;

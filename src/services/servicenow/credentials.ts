@@ -14,7 +14,7 @@ import { credentialEnvPrefix } from '../dbquery/credentials';
  * ever reach instances the operator has explicitly provisioned credentials for.
  *
  * `getEnv` is injectable so an app can layer a file-backed source under process.env
- * (e.g. rubato's ~/.rubato/.env); it defaults to process.env.
+ * (e.g. app's ~/.app/.env); it defaults to process.env.
  */
 
 export type SnAuthKind = 'bearer' | 'basic' | 'none';

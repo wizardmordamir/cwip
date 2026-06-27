@@ -3,7 +3,7 @@
  *
  * Like the sibling `services/sqlite` helpers, the engine never imports
  * `bun:sqlite` — it takes whatever synchronous handle the caller already opened
- * (the `taskq` bin and rubato both pass a `bun:sqlite` `Database`, which
+ * (the `taskq` bin and an app can both pass a `bun:sqlite` `Database`, which
  * satisfies {@link TaskqDb} structurally). That keeps cwip driver-agnostic and
  * lets tests drive the engine with an in-memory database.
  */
@@ -113,7 +113,7 @@ export function isHoldDisposition(d: string): d is HoldDisposition {
   return (HOLD_DISPOSITIONS as readonly string[]).includes(d);
 }
 
-// ── Model / thinking vocabulary (canonical home; rubato defers to this) ────────
+// ── Model / thinking vocabulary (canonical home; apps can defer to this) ────────
 
 export type ThinkLevel = 'off' | 'low' | 'medium' | 'high' | 'max';
 export const THINK_LEVELS: ThinkLevel[] = ['off', 'low', 'medium', 'high', 'max'];

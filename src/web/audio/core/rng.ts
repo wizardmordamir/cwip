@@ -3,9 +3,6 @@
 // The same inputs yield the same stream on every machine within a build, which is what
 // lets a shared seed render byte-identical music (and a byte-identical cosmos for co-op).
 //
-// Extracted from cursedalchemy's Lullabyte (`shared/lullabyte/rng.ts`, the canonical
-// source) and Comet (`comet/world/rng.ts`) — the four hashing/RNG primitives were
-// byte-for-byte identical in both, so this is a ZERO-behaviour-change unification.
 // Domain-specific SALT tables stay per-consumer (they key independent generative streams).
 
 const C1 = 0xcc9e2d51;

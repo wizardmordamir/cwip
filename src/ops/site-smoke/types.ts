@@ -69,7 +69,7 @@ export interface SiteService {
 
 /** The resolved, ready-to-run plan for one repo's site smoke. */
 export interface SiteSmokeSpec {
-  /** taskq repo alias (`ru`, `ca`, …) — labels the result. */
+  /** taskq repo alias (`app1`, `app2`, …) — labels the result. */
   repo: string;
   /** The checkout being smoked (for labels/logs; services carry their own cwd). */
   cwd: string;

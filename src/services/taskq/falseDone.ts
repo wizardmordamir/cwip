@@ -1,7 +1,7 @@
 /**
  * False-done detection — the PURE decision core (no git/build/db/fs here). The
  * impure evidence-gathering (git delta, integration build) and the DB revert live
- * in the consumer (rubato's orchestrator/`doneCheck`), which feeds gathered
+ * in the consumer (app's orchestrator/`doneCheck`), which feeds gathered
  * {@link DoneEvidence} into {@link decideDone} and applies the {@link DoneVerdict}
  * via {@link revertCompletion}. Hosted in cwip so the guard logic has ONE tested,
  * driver-agnostic home both apps share.

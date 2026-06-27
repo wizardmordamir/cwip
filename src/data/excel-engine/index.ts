@@ -4,8 +4,7 @@
 // peers); date comparisons use cwip's own date toolkit (no moment). NO
 // persistence, HTTP, or React —
 // each consuming app owns its own revision store / routes / UI and drives this
-// engine via applyStepToWorkbook + buildRevisionView. Shared by cursedalchemy
-// (multi-user) and rubato (single-user, local).
+// engine via applyStepToWorkbook + buildRevisionView.
 export * from './conditions';
 export * from './executors';
 export * from './hyperformula';

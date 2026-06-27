@@ -125,7 +125,7 @@ export interface NewFinding {
   /** The detector's name, for provenance (e.g. `fu-drift-audit-recurring`). */
   detector?: string;
   /**
-   * Target repo for the auto-created fix task (ca | ru | cwip), so the orchestrator
+   * Target repo for the auto-created fix task (app1 | app2 | app3), so the orchestrator
    * claims it for the right worktree. Omit if the detector can't attribute a repo.
    */
   repo?: string;

@@ -3,7 +3,7 @@
 // for the categories/groups emitted by the `orchlog` recorder
 // (___Agent_Workspace/orchestration/orchlog.ts) — orchlog mirrors CATEGORY_GROUPS;
 // labels, grouping, chart colors, the parser, and the aggregations live here so
-// every consumer (the rubato "Orchestration Processing" page, dashboards) reports
+// every consumer (the external app's "Orchestration Processing" page, dashboards) reports
 // identically.
 //
 //   • taxonomy   CATEGORY_GROUPS / CATEGORY_KEYS / CATEGORY_LABELS / groupOf /

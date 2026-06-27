@@ -16,7 +16,7 @@ export interface LogReviewTaskDraft {
 }
 
 export interface FindingToTaskContext {
-  /** Repo the fix task targets (e.g. 'ca' | 'ru'). */
+  /** Repo the fix task targets (e.g. 'app1' | 'app2'). */
   repo?: string;
   /** Optional slug prefix (default 'log-review'). */
   slugPrefix?: string;

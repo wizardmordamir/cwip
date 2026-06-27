@@ -8,7 +8,7 @@
 // in ONE place both apps share.
 
 /**
- * One slim per-request metric row — the shape ca's `request_metrics` table
+ * One slim per-request metric row — the shape an apps `request_metrics` table
  * stores (camelCase at the boundary). `ts` (epoch-ms the request finished) is the
  * incremental cursor key the consumer scans forward on.
  */
@@ -22,7 +22,7 @@ export interface RequestMetricRow {
   userId?: string | null;
 }
 
-/** One periodic host/process snapshot — ca's `system_samples` row, camelCased. */
+/** One periodic host/process snapshot — app's `system_samples` row, camelCased. */
 export interface SystemSampleRow {
   ts: number;
   eventLoopLagMs?: number | null;

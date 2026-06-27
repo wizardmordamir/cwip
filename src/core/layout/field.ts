@@ -1,5 +1,5 @@
 // The generic field/column contract the layout engine reads through. An app's own
-// richer field type (e.g. cursedalchemy's `DataField`) structurally satisfies this,
+// richer field type (e.g. an apps `DataField`) structurally satisfies this,
 // and the engine stays generic over the concrete field type (`F extends LayoutField`)
 // so the app keeps its full field type inside widget render functions.
 export type LayoutField = {

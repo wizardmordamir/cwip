@@ -10,7 +10,7 @@ import type { SqlDialect } from '../query';
  *   QB_PRODPG_USERNAME  — overrides the stored username (optional)
  * Execution is allowed only when a URL or PASSWORD is present — so an app can
  * only ever reach databases the operator has explicitly provisioned
- * credentials for. Promoted from cursedalchemy's query builder.
+ * credentials for.
  */
 
 /** A saved connection (no password — see `resolveCredentials`). */
